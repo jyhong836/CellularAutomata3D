@@ -1,10 +1,8 @@
-/**
- * 
- */
 package com.cellular3d;
 
 import java.applet.Applet;
 import java.awt.Color;
+import java.awt.Menu;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
@@ -30,7 +28,12 @@ import com.sun.j3d.utils.universe.ViewingPlatform;
  * @author jyhong (Junyuan Hong/jyhong836@gmail.com) 2014Äê11ÔÂ10ÈÕ
  *
  */
-public class CellularAutomata3D extends Applet implements Runnable, KeyListener {
+public class CellularAutomata3DApplet extends Applet implements Runnable, KeyListener {
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	
 	/* Thread */
 	boolean runRotateThread = true;
@@ -55,10 +58,10 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 	float boxscale = 0.3f;
 	
 	/* frame parametres */
-	public static int canvasWidth = 1400;
-	public static int canvasHeight = 900;
-	public static int AppletWidth = canvasWidth + 200;
-	public static int AppletHeight = canvasHeight;
+	public int canvasWidth = 1400;
+	public int canvasHeight = 900;
+	public int AppletWidth = canvasWidth + 200;
+	public int AppletHeight = canvasHeight;
 	
 	/* components */
 	JTextArea  jTextArea;
@@ -74,7 +77,7 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 	/**
 	 * 
 	 */
-	public CellularAutomata3D() {
+	public CellularAutomata3DApplet() {
 		
 		this.setBackground(Color.black);
 		this.setForeground(Color.white);
@@ -176,6 +179,7 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 		computThread = new Thread(this);
 		computThread.start();
 		computThread.suspend();
+		System.out.println("init threads done.");
 	}
 	
 	private void updateMessage() {
@@ -229,11 +233,12 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 					
 			}
 		else if (Thread.currentThread().equals(computThread)) {
+			int runCount = 0;
 			while(runComputThread) {
 				msec = System.currentTimeMillis();
 				updateDots();
 				repaint();
-				this.displayStatus(" CA FPS: "+(1000/(System.currentTimeMillis() - msec)));
+				this.displayStatus(" CA FPS: "+(1000/(System.currentTimeMillis() - msec))+" COUNT: "+(++runCount));
 				this.updateMessage();
 			}
 		}
@@ -243,7 +248,7 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 	public void destroy() {
 		super.destroy();
 		
-		System.out.println("* exit *");
+		System.out.println("* Exit Applet *");
 	}
 	
 	void updateDots() {

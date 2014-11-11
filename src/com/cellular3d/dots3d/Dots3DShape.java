@@ -13,7 +13,7 @@ import javax.vecmath.Color3f;
 import javax.vecmath.Color4f;
 import javax.vecmath.Point3f;
 
-import com.cellular3d.CellularAutomata3D;
+import com.cellular3d.CellularAutomata3DApplet;
 import com.cellular3d.dots3d.grid.CellularAutomataGrid;
 import com.cellular3d.dots3d.grid.GridDot;
 import com.sun.j3d.utils.geometry.Box;
@@ -35,10 +35,10 @@ public class Dots3DShape extends BranchGroup {
 	
 	private int pointsNum = 100;
 	
-	private int size  = 100;
-	private int xsize = size;
-	private int ysize = size;
-	private int zsize = size;
+//	private int size  = 100;
+	private int xsize;
+	private int ysize;
+	private int zsize;
 	
 	CellularAutomataGrid cag;
 	private GridDot[][][]   gridptr;
@@ -52,14 +52,14 @@ public class Dots3DShape extends BranchGroup {
 	Transform3D t3;
 	private double rotXAngle = .0f;
 	
-	CellularAutomata3D parentApplet = null;
+	CellularAutomata3DApplet parentApplet = null;
 	
 	/**
 	 * constructor
 	 * @param scale the width, depth and height will be set to scale*2.
 	 * @param parentApplet the Applet will be used to display status.
 	 */
-	public Dots3DShape(float scale, CellularAutomata3D parentApplet) {
+	public Dots3DShape(float scale, CellularAutomata3DApplet parentApplet) {
 		this(scale*2, scale*2, scale*2, parentApplet);
 	}
 
@@ -70,7 +70,7 @@ public class Dots3DShape extends BranchGroup {
 	 * @param height
 	 * @param parentApplet the Applet will be used to display status.
 	 */
-	public Dots3DShape(float width, float depth, float height, CellularAutomata3D parentApplet) {
+	public Dots3DShape(float width, float depth, float height, CellularAutomata3DApplet parentApplet) {
 		
 		this.parentApplet = parentApplet;
 		
@@ -84,10 +84,15 @@ public class Dots3DShape extends BranchGroup {
 			boxapp.setPolygonAttributes(new PolygonAttributes(PolygonAttributes.POLYGON_LINE, PolygonAttributes.CULL_BACK,0));
 		box = new Box(width/2, depth/2, height/2, boxapp);
 		
+		
 		/* intialize CellularAutomataGrid */
 		cag = new CellularAutomataGrid(width, depth, height);
 		gridptr = cag.getGridPtr();
 		this.pointsNum = cag.getPointsNum();
+		xsize = cag.getXSize();
+		ysize = cag.getYSize();
+		zsize = cag.getZSize();
+		
 		
 		System.out.println("init 3D shape points...");
 		long msec = System.currentTimeMillis();
@@ -159,19 +164,11 @@ public class Dots3DShape extends BranchGroup {
 
 	public void updatePoints() {
 		
-//		long msec = System.currentTimeMillis();
-		
 		// update gridptr
 		gridptr = cag.getGridPtr();
 		
-		pointsNum = 0;
-		for (int i = 0; i < gridptr.length; i++)
-			for (int j = 0; j < gridptr[0].length; j++)
-				for (int k = 0; k < gridptr[0][0].length; k++) {
-					if (gridptr[i][j][k].count>0) {
-						pointsNum++;
-					}
-				}
+		pointsNum = cag.updatePointsNum();
+		
         Point3f[] plaPts = new Point3f[pointsNum];
         Color4f[] plaCls = new Color4f[pointsNum];
 
@@ -191,8 +188,6 @@ public class Dots3DShape extends BranchGroup {
 		pla.setCoordinates(0, plaPts);
         pla.setColors(0, plaCls);
         plShape.setGeometry(pla);
-        
-//        displayStatus("FPS: "+(1000/(System.currentTimeMillis() - msec)));
         
 	}
 	

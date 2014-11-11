@@ -1,9 +1,4 @@
-/**
- * 
- */
 package com.cellular3d.dots3d.grid;
-
-import com.cellular3d.CellularAutomata3D;
 
 /**
  * CellularAutomataGrid is a computation only Cellular Automata. 
@@ -16,7 +11,7 @@ public class CellularAutomataGrid {
 	
 	private int pointsNum = 100;
 	
-	private int size  = 100;
+	private int size  = 50;
 	private int xsize = size;
 	private int ysize = size;
 	private int zsize = size;
@@ -155,8 +150,6 @@ public class CellularAutomataGrid {
 	
 	public void updateDots() {
 		
-		long msec = System.currentTimeMillis();
-		
 		gridIndexBuff = (gridIndex>0)? 0:1;
 		gridPtrBuff = grid[gridIndexBuff];
 		
@@ -204,16 +197,7 @@ public class CellularAutomataGrid {
 		gridIndex = gridIndexBuff;
 		gridptr = grid[gridIndex];// gridPtrBuff;
 		
-//		updatePoints();
-
-		msec -= System.currentTimeMillis();
-//		System.out.println("used time: "+(0-msec)+"ms");
-		
 	}
-	
-//	void displayStatus(String str) {
-//		parentApplet.displayStatus(str);
-//	}
 	
 	/**
 	 * Check and Process untouchable grid
@@ -253,8 +237,6 @@ public class CellularAutomataGrid {
 					break;
 				case 1:
 					gridPtrBuff[i-1][j][k].mass[0][0] = mass[0][0];
-//								if (i==98)
-//									System.out.print(false);;
 					gridPtrBuff[i+1][j][k].mass[0][1] = mass[0][1];
 					break;
 				case 2:
@@ -263,8 +245,6 @@ public class CellularAutomataGrid {
 						gridPtrBuff[i][j+1][k].mass[1][1] = mass[0][1];
 					} else { // same to case 1
 						gridPtrBuff[i-1][j][k].mass[0][0] = mass[0][0];
-//									if (i==98)
-//										System.out.print(false);;
 						gridPtrBuff[i+1][j][k].mass[0][1] = mass[0][1];
 					}
 					break;
@@ -373,12 +353,37 @@ public class CellularAutomataGrid {
 		return zsize;
 	}
 
+	/**
+	 * Get the latest version of gridptr.
+	 * @return GridDot[][][] gridptr
+	 */
 	public GridDot[][][] getGridPtr() {
 		return gridptr;
 	}
 	
+	/**
+	 * Get the generate number of grids which have been occupied.
+	 * @return int pointsNum
+	 */
 	public int getPointsNum() {
 		return pointsNum;
 	}
+	
+	/**
+	 * Update and return pointsNum
+	 * @return int pointsNum
+	 */
+	public int updatePointsNum() {
+
+		pointsNum = 0;
+		for (int i = 0; i < gridptr.length; i++)
+			for (int j = 0; j < gridptr[0].length; j++)
+				for (int k = 0; k < gridptr[0][0].length; k++)
+					if (gridptr[i][j][k].count>0)
+						pointsNum++;
+		return pointsNum;
+		
+	}
 
 }
+
