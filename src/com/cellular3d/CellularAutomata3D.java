@@ -26,7 +26,7 @@ import com.sun.j3d.utils.universe.SimpleUniverse;
 import com.sun.j3d.utils.universe.ViewingPlatform;
 
 /**
- * Cellular Automata in 3D mode
+ * Cellular Automata in 3D mode. This class will control all of the Thread objects.
  * @author jyhong (Junyuan Hong/jyhong836@gmail.com) 2014Äê11ÔÂ10ÈÕ
  *
  */
