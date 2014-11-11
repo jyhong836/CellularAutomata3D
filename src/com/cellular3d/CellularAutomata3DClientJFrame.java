@@ -1,8 +1,9 @@
 package com.cellular3d;
 
 import java.applet.Applet;
-import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
@@ -25,13 +26,20 @@ public class CellularAutomata3DClientJFrame extends JFrame implements WindowList
 	 */
 	private static final long serialVersionUID = 1L;
 	
+	Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	
 	Applet applet;
 	
 	/* Menu Items */
 	JMenuItem connectItem;
 
 	public CellularAutomata3DClientJFrame(Applet app, int width, int height) {
-		this.setBounds(0, 0, width+20, height+70);
+		this.addWindowListener(this);
+		this.setTitle("Cellular Antomata Client");
+		this.setBounds(screenSize.width/2 - width/2 - 10,
+				screenSize.height/2 - height/2 - 55, 
+				width+20, 
+				height+70);
 		this.setLayout(new FlowLayout());
 		
 		/* Applet */
@@ -65,7 +73,11 @@ public class CellularAutomata3DClientJFrame extends JFrame implements WindowList
 	}
 
 	@Override
-	public void windowClosing(WindowEvent e) {}
+	public void windowClosing(WindowEvent e) {
+		applet.destroy();
+		
+		System.exit(0);
+	}
 
 	@Override
 	public void windowDeactivated(WindowEvent e) {}
