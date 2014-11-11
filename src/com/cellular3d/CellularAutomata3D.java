@@ -168,6 +168,22 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 		super.init();
 		initCompoents();
 		
+		displayMessage();
+		
+		rotateThread = new Thread(this);
+		rotateThread.start();
+		rotateThread.suspend();
+		computThread = new Thread(this);
+		computThread.start();
+		computThread.suspend();
+	}
+	
+	private void updateMessage() {
+		jTextArea.setText("");
+		displayMessage();
+	}
+	
+	private void displayMessage() {
 		/* display messages */
 		displayString("Key bind:");
 		for (String[] strings : usageString) {
@@ -184,13 +200,14 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 		displayString("  freeMemory: " + runtime.freeMemory()/1024/1024+" M (" 
 				+(100*runtime.freeMemory()/runtime.totalMemory())+"%)");
 		displayString("  maxMemory: " + runtime.maxMemory()/1024/1024+" M");
-		
-		rotateThread = new Thread(this);
-		rotateThread.start();
-		rotateThread.suspend();
-		computThread = new Thread(this);
-		computThread.start();
-		computThread.suspend();
+		if (runtime.maxMemory() < dots3d.getRequiredMemory()) {
+			displayString("   * WARN: memory is not enough");
+			System.out.println("   * WARN: memory is not enough, required for"+
+					dots3d.getRequiredMemory()/1024/1024+" M");
+		}
+		displayString("Grid Message:");
+		displayString("  size: "+dots3d.getXSize()+"x"+dots3d.getYSize()+"x"+dots3d.getZSize());
+		displayString("  required max memory: "+dots3d.getRequiredMemory()/1024/1024+" M");
 	}
 
 	@Override
@@ -217,6 +234,7 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 				updateDots();
 				repaint();
 				this.displayStatus(" CA FPS: "+(1000/(System.currentTimeMillis() - msec)));
+				this.updateMessage();
 			}
 		}
 	}

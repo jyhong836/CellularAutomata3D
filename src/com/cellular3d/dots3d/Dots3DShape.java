@@ -472,6 +472,22 @@ public class Dots3DShape extends BranchGroup {
 		}
 		
 	}
+	
+	public long getRequiredMemory() {
+		return xsize*ysize*zsize*700;
+	}
+	
+	public int getXSize() {
+		return xsize;
+	}
+	
+	public int getYSize() {
+		return ysize;
+	}
+	
+	public int getZSize() {
+		return zsize;
+	}
 
 }
 
