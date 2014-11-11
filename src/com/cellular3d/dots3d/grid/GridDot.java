@@ -12,6 +12,7 @@ public class GridDot {
 	public int value;
 	public int count;
 	public int countLine[];
+	public int gridProperty; // >0, reflect grid; 0, reachable grid; <0, attract grid.
 
 	public GridDot() {
 		prob = new float[3][2];
@@ -19,10 +20,12 @@ public class GridDot {
 		countLine = new int[3];
 		value = 0;
 		count = 0;
+		gridProperty = 0;
 	}
 	
 	/**
-	 * use to update values which can not be set directly
+	 * use to update values which can not be set directly,
+	 * including value and count
 	 */
 	public void update() {
 		value = 0;
@@ -38,6 +41,9 @@ public class GridDot {
 		}
 	}
 	
+	/**
+	 * reset mass, prob, value and count to 0, ATTENTION, this will not clear gridProperty
+	 */
 	public void clear() {
 		value = 0;
 		count = 0;
@@ -49,5 +55,21 @@ public class GridDot {
 			countLine[i] = 0;
 		}
 	}
+	
+	/**
+	 * set grid as untouchable grid. ATTENTION: this will not clear the values of
+	 * other variables.
+	 */
+	public void setUntouchable() {
+		this.gridProperty = -1;
+	}
+
+	/**
+	 * set grid as untouchable grid
+	 */
+	public void setGridProperty(int gridProperty) {
+		this.gridProperty = gridProperty;
+	}
 
 }
+

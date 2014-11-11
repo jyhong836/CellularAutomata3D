@@ -1,28 +1,24 @@
 package com.cellular3d.dots3d;
 
-import java.applet.Applet;
-import java.util.Arrays;
-
 import javax.media.j3d.Appearance;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.ColoringAttributes;
-import javax.media.j3d.Geometry;
 import javax.media.j3d.GeometryArray;
 import javax.media.j3d.PointArray;
+import javax.media.j3d.PolygonAttributes;
 import javax.media.j3d.Shape3D;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
-import javax.naming.directory.DirContext;
 import javax.vecmath.Color3f;
 import javax.vecmath.Color4f;
 import javax.vecmath.Point3f;
 
 import com.cellular3d.CellularAutomata3D;
 import com.cellular3d.dots3d.grid.GridDot;
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
+import com.sun.j3d.utils.geometry.Box;
 
 /**
- * Dots in 3D mode. Every dot is a computation point, which may not include 
+ * Dots model object in 3D mode. Every dot is a computation point, which may not include 
  * one particle.
  * @author jyhong (Junyuan Hong/jyhong836@gmail.com) 2014Äê11ÔÂ10ÈÕ
  *
@@ -38,7 +34,7 @@ public class Dots3DShape extends BranchGroup {
 	
 	private int pointsNum = 100;
 	
-	private int size  = 58;
+	private int size  = 100;
 	private int xsize = size;
 	private int ysize = size;
 	private int zsize = size;
@@ -52,8 +48,9 @@ public class Dots3DShape extends BranchGroup {
 	private float width  = .8f;
 	private float depth  = .8f;
 	private float height = .8f;
-	private float initAirDensity = .04f;
+	private float initAirDensity = .1f;
 	
+	Box box;
 	Transform3D t3;
 	private double rotXAngle = .0f;
 	
@@ -61,11 +58,11 @@ public class Dots3DShape extends BranchGroup {
 	
 	/**
 	 * constructor
-	 * @param scale
+	 * @param scale the width, depth and height will be set to scale*2.
+	 * @param parentApplet the Applet will be used to display status.
 	 */
 	public Dots3DShape(float scale, CellularAutomata3D parentApplet) {
-		this(scale*2, scale*2, scale*2);
-		this.parentApplet = parentApplet;
+		this(scale*2, scale*2, scale*2, parentApplet);
 	}
 
 	/**
@@ -73,24 +70,35 @@ public class Dots3DShape extends BranchGroup {
 	 * @param width
 	 * @param depth
 	 * @param height
+	 * @param parentApplet the Applet will be used to display status.
 	 */
-	public Dots3DShape(float width, float depth, float height) {
+	public Dots3DShape(float width, float depth, float height, CellularAutomata3D parentApplet) {
+		
+		this.parentApplet = parentApplet;
 		
 		this.width = width;
 		this.depth = depth;
 		this.height = height;
+
+		/* box */
+		Appearance boxapp = new Appearance();
+		if (boxapp!=null)
+			boxapp.setPolygonAttributes(new PolygonAttributes(PolygonAttributes.POLYGON_LINE, PolygonAttributes.CULL_BACK,0));
+		box = new Box(width/2, depth/2, height/2, boxapp);
 		
+		/* initialize the memory of grid */
 		pointsNum = 0;
 		grid = new GridDot[2][xsize][ysize][zsize];
 		gridptr = grid[gridIndex];
 		gridPtrBuff = grid[gridIndexBuff];
 		
-		// init grid dots
+		// initialize grid dots
 		initGridDots();
 		
 		System.out.println("init 3D shape points...");
 		long msec = System.currentTimeMillis();
 
+		// initialize Appearance and set color mode
         Appearance app = new Appearance();
         ColoringAttributes ca = new ColoringAttributes(new Color3f(0f, 1.0f, 1.0f), ColoringAttributes.FASTEST);
         app.setColoringAttributes(ca);
@@ -98,6 +106,7 @@ public class Dots3DShape extends BranchGroup {
         Point3f[] plaPts = new Point3f[pointsNum];
         Color4f[] plaCls = new Color4f[pointsNum];
 
+        /* set points */
         int count = 0;
         float color = 0f;
         for (int i = 0; i < xsize; i++) 
@@ -112,16 +121,20 @@ public class Dots3DShape extends BranchGroup {
         
         System.out.println(" points number: "+ pointsNum);
         
+        /* create PointArray */
         pla = new PointArray(pointsNum, pointsArrayMod);
         pla.setCoordinates(0, plaPts);
         pla.setColors(0, plaCls);
 
+        /* create Shape3D and add to BranchGroup */
         plShape = new Shape3D(pla, app);
         plShape.setCapability(Shape3D.ALLOW_GEOMETRY_WRITE);
-		t3 = new Transform3D();
+        
+		t3 = new Transform3D(); // init t3
        	objRotate = new TransformGroup();
         objRotate.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
         objRotate.addChild(plShape);
+        objRotate.addChild(box);
         this.addChild(objRotate);
         
         System.out.println("success in " + (System.currentTimeMillis() - msec) + " ms");
@@ -134,22 +147,18 @@ public class Dots3DShape extends BranchGroup {
 		System.out.print(" init random air grids... memory...");
 		long msec = System.currentTimeMillis();
 		
-		double prob = 1.0;
 		int[][] mass;
-		for (int i = 0; i < xsize; i++) {
+		for (int i = 0; i < xsize; i++)
 			for (int j = 0; j < ysize; j++)
-				for (int k = 0; k < zsize; k++)
-					gridptr[i][j][k] = new GridDot();
-//			if (i%10==0) {
-//				System.out.println(i+" ");
-////				System.out.flush();
-//			}
-		}
+				for (int k = 0; k < zsize; k++) {
+					grid[0][i][j][k] = new GridDot();
+					grid[1][i][j][k] = new GridDot();
+				}
 		System.out.print("ok...");
 		for (int i = 1; i < xsize-1; i++) {
 			for (int j = 1; j < ysize-1; j++) {
 				for (int k = 1; k < zsize-1; k++) {
-					if (Math.random()<initAirDensity){
+					if (Math.random()<initAirDensity) {
 						mass = gridptr[i][j][k].mass;
 						// choose one direction add particle
 						mass[(int)Math.floor(Math.random()*3)][(Math.random()>0.5)?1:0] = 1;
@@ -159,11 +168,28 @@ public class Dots3DShape extends BranchGroup {
 					}
 				}
 			}
-//			if (i%10==0) {
-//				System.out.print("\r"+i+" ");
-//				System.out.flush();
-//			}
 		}
+		/* ------ process bounds ------- */
+		for (int i = 0;i<xsize;i+=xsize-1)
+			for (int j = 1; j < ysize-1; j++)
+				for (int k = 1; k < zsize-1; k++) {
+					grid[0][i][j][k].setUntouchable();
+					grid[1][i][j][k].setUntouchable();
+				}
+
+		for (int i = 1;i<xsize-1;i++)
+			for (int j = 0; j < ysize; j+=ysize-1)
+				for (int k = 1; k < zsize-1; k++) {
+					grid[0][i][j][k].setUntouchable();
+					grid[1][i][j][k].setUntouchable();
+				}
+
+		for (int i = 1;i<xsize-1;i++)
+			for (int j = 1; j < ysize-1; j++)
+				for (int k = 0; k < zsize; k+=zsize-1) {
+					grid[0][i][j][k].setUntouchable();
+					grid[1][i][j][k].setUntouchable();
+				}
 		
 		System.out.println(" success in " + (System.currentTimeMillis() - msec) + " ms");
 		/* --------- density cloud ----------- */
@@ -186,15 +212,9 @@ public class Dots3DShape extends BranchGroup {
 				}
 			}
 		}
+		
 		System.out.println(" success in " + (System.currentTimeMillis() - msec) + " ms");
 
-		for (int i = 0; i < gridPtrBuff.length; i++) {
-			for (int j = 0; j < gridPtrBuff[0].length; j++) {
-				for (int k = 0; k < gridPtrBuff[0][0].length; k++) {
-					gridPtrBuff[i][j][k] = new GridDot();
-				}
-			}
-		}
 		System.out.println("init GridDots success");
 		
 	}
@@ -222,147 +242,34 @@ public class Dots3DShape extends BranchGroup {
 		
 		int[][] mass;
 		int[]   countLine;
-		for (int i = 1; i < xsize-1; i++) {
-			for (int j = 1; j < ysize-1; j++) {
-				for (int k = 1; k < zsize-1; k++) {
+		for (int i = 0; i < xsize; i++) 
+		{
+			for (int j = 0; j < ysize; j++) 
+			{
+				for (int k = 0; k < zsize; k++) 
+				{
 					
 					mass = gridptr[i][j][k].mass;
 					countLine = gridptr[i][j][k].countLine;
-					// direction in x axis
-					if (mass[0][0]>0) { // come from +x direction
-						if (mass[0][1]>0) { // from -x
-							switch (countLine[1]) {
-							case 0:
-								gridPtrBuff[i][j-1][k].mass[1][0] = mass[0][0];
-								gridPtrBuff[i][j+1][k].mass[1][1] = mass[0][1];
-								break;
-							case 1:
-								gridPtrBuff[i-1][j][k].mass[0][0] = mass[0][0];
-//								if (i==98)
-//									System.out.print(false);;
-								gridPtrBuff[i+1][j][k].mass[0][1] = mass[0][1];
-								break;
-							case 2:
-								if (countLine[2]!=1) { // same to case 0
-									gridPtrBuff[i][j-1][k].mass[1][0] = mass[0][0];
-									gridPtrBuff[i][j+1][k].mass[1][1] = mass[0][1];
-								} else { // same to case 1
-									gridPtrBuff[i-1][j][k].mass[0][0] = mass[0][0];
-//									if (i==98)
-//										System.out.print(false);;
-									gridPtrBuff[i+1][j][k].mass[0][1] = mass[0][1];
-								}
-								break;
-
-							default:
-								break;
-							}
-						} else {
-							gridPtrBuff[i-1][j][k].mass[0][0] = mass[0][0];
-						}
-					}
-					else if (mass[0][1]>0) { // come / from -x
-						gridPtrBuff[i+1][j][k].mass[0][1] = mass[0][1];
-					}
-					// direction in y axis
-					if (mass[1][0]>0) { // come from +x direction
-						if (mass[1][1]>0) { // from -x
-							switch (countLine[2]) {
-							case 0:
-								gridPtrBuff[i][j][k-1].mass[2][0] = mass[1][0];
-								gridPtrBuff[i][j][k+1].mass[2][1] = mass[1][1];
-								break;
-							case 1:
-								gridPtrBuff[i][j-1][k].mass[1][0] = mass[1][0];
-								gridPtrBuff[i][j+1][k].mass[1][1] = mass[1][1];
-								break;
-							case 2:
-								if (countLine[0]!=1) { // same to case 0
-									gridPtrBuff[i][j][k-1].mass[2][0] = mass[1][0];
-									gridPtrBuff[i][j][k+1].mass[2][1] = mass[1][1];
-								} else { // same to case 1
-									gridPtrBuff[i][j-1][k].mass[1][0] = mass[1][0];
-									gridPtrBuff[i][j+1][k].mass[1][1] = mass[1][1];
-								}
-								break;
-
-							default:
-								break;
-							}
-						} else {
-							gridPtrBuff[i][j-1][k].mass[1][0] = mass[1][0];
-						}
-					}
-					else if (mass[1][1]>0) { // come from -x
-						gridPtrBuff[i][j+1][k].mass[1][1] = mass[1][1];
-					}
-					// direction in z axis
-					if (mass[2][0]>0) { // come from +x direction
-						if (mass[2][1]>0) { // from -x
-							switch (countLine[0]) {
-							case 0:
-								gridPtrBuff[i-1][j][k].mass[0][0] = mass[2][0];
-								gridPtrBuff[i+1][j][k].mass[0][1] = mass[2][1];
-								break;
-							case 1:
-								gridPtrBuff[i][j][k-1].mass[2][0] = mass[2][0];
-								gridPtrBuff[i][j][k+1].mass[2][1] = mass[2][1];
-								break;
-							case 2:
-								if (countLine[1]!=1) { // same to case 0
-									gridPtrBuff[i-1][j][k].mass[0][0] = mass[2][0];
-									gridPtrBuff[i+1][j][k].mass[0][1] = mass[2][1];
-								} else { // same to case 1
-									gridPtrBuff[i][j][k-1].mass[2][0] = mass[2][0];
-									gridPtrBuff[i][j][k+1].mass[2][1] = mass[2][1];
-								}
-								break;
-
-							default:
-								break;
-							}
-						} else {
-							gridPtrBuff[i][j][k-1].mass[2][0] = mass[2][0];
-						}
-					}
-					else if (mass[2][1]>0) { // come from -x
-						gridPtrBuff[i][j][k+1].mass[2][1] = mass[2][1];
-					}
+					
+					// check gridProperty
+					if (processUntouchableGrid(mass, i, j, k))
+						;
+					else if (gridptr[i][j][k].gridProperty == 0) {
+						
+						// direction in x axis
+						processXDirectionGrid(mass, countLine, i, j, k);
+						
+						// direction in y axis
+						processYDirectionGrid(mass, countLine, i, j, k);
+						// direction in z axis
+						processZDirectionGrid(mass, countLine, i, j, k);
+						
+					} // if gridptr[i][j][k].gridProperty == 0
 					
 				} // k
 			} // j
 		} // i
-		
-		/* ------ process bounds ------- */
-		for (int i = 0;i<xsize;i+=xsize-1)
-			for (int j = 1; j < ysize-1; j++)
-				for (int k = 1; k < zsize-1; k++) {
-					if (gridptr[i][j][k].mass[0][0]>0) {
-						gridPtrBuff[i+1][j][k].mass[0][1] = gridptr[i][j][k].mass[0][0];
-					} else if (gridptr[i][j][k].mass[0][1]>0) {
-						gridPtrBuff[i-1][j][k].mass[0][0] = gridptr[i][j][k].mass[0][1];
-					}
-				}
-
-		for (int i = 1;i<xsize-1;i++)
-			for (int j = 0; j < ysize; j+=ysize-1)
-				for (int k = 1; k < zsize-1; k++) {
-					if (gridptr[i][j][k].mass[1][0]>0) {
-						gridPtrBuff[i][j+1][k].mass[1][1] = gridptr[i][j][k].mass[1][0];
-					} else if (gridptr[i][j][k].mass[1][1]>0) {
-						gridPtrBuff[i][j-1][k].mass[1][0] = gridptr[i][j][k].mass[1][1];
-					}
-				}
-
-		for (int i = 1;i<xsize-1;i++)
-			for (int j = 1; j < ysize-1; j++)
-				for (int k = 0; k < zsize; k+=zsize-1) {
-					if (gridptr[i][j][k].mass[2][0]>0) {
-						gridPtrBuff[i][j][k+1].mass[2][1] = gridptr[i][j][k].mass[2][0];
-					} else if (gridptr[i][j][k].mass[2][1]>0) {
-						gridPtrBuff[i][j][k-1].mass[2][0] = gridptr[i][j][k].mass[2][1];
-					}
-				}
 
 		/* -------- update points -------- */
 		for (int i = 0; i < xsize; i++) {
@@ -383,7 +290,7 @@ public class Dots3DShape extends BranchGroup {
 //		System.out.println("used time: "+(0-msec)+"ms");
 		
 	}
-	
+
 	public void updatePoints() {
 		
 //		long msec = System.currentTimeMillis();
@@ -422,6 +329,148 @@ public class Dots3DShape extends BranchGroup {
 	
 	void displayStatus(String str) {
 		parentApplet.displayStatus(str);
+	}
+	
+	/**
+	 * Check and Process untouchable grid
+	 * @param mass
+	 * @param i
+	 * @param j
+	 * @param k
+	 * @return if is untouchable, then return true.
+	 */
+	private boolean processUntouchableGrid(int[][] mass, int i, int j, int k ) {
+		if (gridptr[i][j][k].gridProperty < 0) {
+			// untouchable, then reflect
+			if (mass[0][0] > 0)
+				gridPtrBuff[i+1][j][k].mass[0][1] = mass[0][0];
+			if (mass[0][1] > 0)
+				gridPtrBuff[i-1][j][k].mass[0][0] = mass[0][1];
+			if (mass[1][0] > 0)
+				gridPtrBuff[i][j+1][k].mass[1][1] = mass[1][0];
+			if (mass[1][1] > 0)
+				gridPtrBuff[i][j-1][k].mass[1][0] = mass[1][1];
+			if (mass[2][0] > 0)
+				gridPtrBuff[i][j][k+1].mass[2][1] = mass[2][0];
+			if (mass[2][1] > 0)
+				gridPtrBuff[i][j][k-1].mass[2][0] = mass[2][1];
+			return true;
+		} else 
+			return false;
+	}
+	
+	private void processXDirectionGrid(int[][] mass, int[] countLine, int i, int j, int k) {
+		if (mass[0][0]>0) { // come from +x direction
+			if (mass[0][1]>0) { // from -x
+				switch (countLine[1]) {
+				case 0:
+					gridPtrBuff[i][j-1][k].mass[1][0] = mass[0][0];
+					gridPtrBuff[i][j+1][k].mass[1][1] = mass[0][1];
+					break;
+				case 1:
+					gridPtrBuff[i-1][j][k].mass[0][0] = mass[0][0];
+//								if (i==98)
+//									System.out.print(false);;
+					gridPtrBuff[i+1][j][k].mass[0][1] = mass[0][1];
+					break;
+				case 2:
+					if (countLine[2]!=1) { // same to case 0
+						gridPtrBuff[i][j-1][k].mass[1][0] = mass[0][0];
+						gridPtrBuff[i][j+1][k].mass[1][1] = mass[0][1];
+					} else { // same to case 1
+						gridPtrBuff[i-1][j][k].mass[0][0] = mass[0][0];
+//									if (i==98)
+//										System.out.print(false);;
+						gridPtrBuff[i+1][j][k].mass[0][1] = mass[0][1];
+					}
+					break;
+
+				default:
+					break;
+				}
+			} else {
+				try {
+					gridPtrBuff[i-1][j][k].mass[0][0] = mass[0][0];
+				} catch (ArrayIndexOutOfBoundsException e) {
+					System.out.println(" "+gridptr[i][j][k].gridProperty);
+				}
+			}
+		}
+		else if (mass[0][1]>0) { // come / from -x
+			gridPtrBuff[i+1][j][k].mass[0][1] = mass[0][1];
+		}
+	}
+
+	private void processYDirectionGrid(int[][] mass, int[] countLine, int i,
+			int j, int k) {
+		if (mass[1][0]>0) { // come from +y direction
+			if (mass[1][1]>0) { // from -y
+				switch (countLine[2]) {
+				case 0:
+					gridPtrBuff[i][j][k-1].mass[2][0] = mass[1][0];
+					gridPtrBuff[i][j][k+1].mass[2][1] = mass[1][1];
+					break;
+				case 1:
+					gridPtrBuff[i][j-1][k].mass[1][0] = mass[1][0];
+					gridPtrBuff[i][j+1][k].mass[1][1] = mass[1][1];
+					break;
+				case 2:
+					if (countLine[0]!=1) { // same to case 0
+						gridPtrBuff[i][j][k-1].mass[2][0] = mass[1][0];
+						gridPtrBuff[i][j][k+1].mass[2][1] = mass[1][1];
+					} else { // same to case 1
+						gridPtrBuff[i][j-1][k].mass[1][0] = mass[1][0];
+						gridPtrBuff[i][j+1][k].mass[1][1] = mass[1][1];
+					}
+					break;
+
+				default:
+					break;
+				}
+			} else {
+				gridPtrBuff[i][j-1][k].mass[1][0] = mass[1][0];
+			}
+		}
+		else if (mass[1][1]>0) { // come from -x
+			gridPtrBuff[i][j+1][k].mass[1][1] = mass[1][1];
+		}
+		
+	}
+	
+	private void processZDirectionGrid(int[][] mass, int[] countLine, int i,
+			int j, int k) {
+		if (mass[2][0]>0) { // come from +z direction
+			if (mass[2][1]>0) { // from -z
+				switch (countLine[0]) {
+				case 0:
+					gridPtrBuff[i-1][j][k].mass[0][0] = mass[2][0];
+					gridPtrBuff[i+1][j][k].mass[0][1] = mass[2][1];
+					break;
+				case 1:
+					gridPtrBuff[i][j][k-1].mass[2][0] = mass[2][0];
+					gridPtrBuff[i][j][k+1].mass[2][1] = mass[2][1];
+					break;
+				case 2:
+					if (countLine[1]!=1) { // same to case 0
+						gridPtrBuff[i-1][j][k].mass[0][0] = mass[2][0];
+						gridPtrBuff[i+1][j][k].mass[0][1] = mass[2][1];
+					} else { // same to case 1
+						gridPtrBuff[i][j][k-1].mass[2][0] = mass[2][0];
+						gridPtrBuff[i][j][k+1].mass[2][1] = mass[2][1];
+					}
+					break;
+
+				default:
+					break;
+				}
+			} else {
+				gridPtrBuff[i][j][k-1].mass[2][0] = mass[2][0];
+			}
+		}
+		else if (mass[2][1]>0) { // come from -x
+			gridPtrBuff[i][j][k+1].mass[2][1] = mass[2][1];
+		}
+		
 	}
 
 }

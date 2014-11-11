@@ -5,18 +5,13 @@ package com.cellular3d;
 
 import java.applet.Applet;
 import java.awt.Color;
-import java.awt.FlowLayout;
-import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.image.BufferedImage;
 
-import javax.media.j3d.Appearance;
 import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.Canvas3D;
 import javax.media.j3d.DirectionalLight;
-import javax.media.j3d.PolygonAttributes;
 import javax.media.j3d.Transform3D;
 import javax.media.j3d.TransformGroup;
 import javax.swing.JTextArea;
@@ -26,12 +21,9 @@ import javax.vecmath.Point3d;
 import javax.vecmath.Vector3f;
 
 import com.cellular3d.dots3d.Dots3DShape;
-import com.sun.j3d.utils.applet.MainFrame;
 import com.sun.j3d.utils.behaviors.vp.OrbitBehavior;
-import com.sun.j3d.utils.geometry.Box;
 import com.sun.j3d.utils.universe.SimpleUniverse;
 import com.sun.j3d.utils.universe.ViewingPlatform;
-import com.sun.xml.internal.fastinfoset.sax.Properties;
 
 /**
  * Cellular Automata in 3D mode
@@ -61,7 +53,6 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 	TransformGroup boxTransformGroup;
 	
 	float boxscale = 0.3f;
-	Box box;
 	
 	/* frame parametres */
 	public static int canvasWidth = 1400;
@@ -143,17 +134,6 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 	
 	void initObjects() {
 		
-		/* box */
-		Appearance app = new Appearance();
-		if (app!=null)
-			app.setPolygonAttributes(new PolygonAttributes(PolygonAttributes.POLYGON_LINE, PolygonAttributes.CULL_BACK,0));
-		box = new Box(boxscale,boxscale,boxscale,app);
-		t3 = new Transform3D();
-		boxTransformGroup = new TransformGroup();
-		boxTransformGroup.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
-		boxTransformGroup.addChild(box);
-		group.addChild(boxTransformGroup);
-		
 		/* dots */
 		dots3d = new Dots3DShape(boxscale, this);
 		this.group.addChild(dots3d);
@@ -219,20 +199,17 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 		
 		if (Thread.currentThread().equals(rotateThread))
 			while (runRotateThread) {
-//				if (!stopRotateThread) {
 					/* rotate */
 					dots3d.rotX(.01);
-					t3.rotX(dots3d.getRotXAngle());
-					boxTransformGroup.setTransform(t3);
-//					updateDots();
 					this.repaint();
+					
 					try {
 						rotateThread.sleep(1000/36);
 //						Thread.sleep(1000/24);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-//				}
+					
 			}
 		else if (Thread.currentThread().equals(computThread)) {
 			while(runComputThread) {
@@ -287,7 +264,6 @@ public class CellularAutomata3D extends Applet implements Runnable, KeyListener 
 				computThread.suspend();
 			else
 				computThread.resume();
-//			System.out.println("computThread is alive?:"+computThread.isAlive());
 			break;
 		case 'h':
 			System.out.println("Usage:");
