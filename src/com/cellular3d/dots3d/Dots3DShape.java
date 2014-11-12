@@ -151,7 +151,7 @@ public class Dots3DShape extends BranchGroup {
 	 * ) as the CAComputationKernel.
 	 */
 	public void setLocalKernel() {
-
+		
 		this.displayStatus("init local kernel...");
 		System.out.println("* init local kernel...");
 		/* intialize CellularAutomataGrid */
@@ -182,7 +182,7 @@ public class Dots3DShape extends BranchGroup {
 	}
 	
 	public boolean connectRemoteKernel(String host, int port) {
-		caKernel.setSocket(host, port);
+		((ComputationClient)caKernel).setSocket(host, port);
 		if (caKernel.init()) {
 			displayStatus("connect remote kernel success");
 			return true;
@@ -194,7 +194,8 @@ public class Dots3DShape extends BranchGroup {
 	
 	public boolean disconnectRemoteKernel() {
 //		caKernel.setSocket(host, port);
-		if (caKernel.closeSocket()) {
+		ComputationClient cc = (ComputationClient)caKernel;
+		if (cc.closeSocket()) {
 			displayStatus("disconnect remote kernel success");
 			return true;
 		} else {
@@ -212,7 +213,7 @@ public class Dots3DShape extends BranchGroup {
 		if (caKernel.update()) {
 			this.updatePoints();
 		} else {
-			
+			System.err.println("update dots failed");
 		}
 			
 	}

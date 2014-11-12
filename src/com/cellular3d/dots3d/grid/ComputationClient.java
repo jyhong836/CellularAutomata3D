@@ -4,9 +4,11 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.ConnectException;
 import java.net.ServerSocket;
@@ -22,11 +24,13 @@ public class ComputationClient implements CAComputationKernel {
 	String host = "127.0.0.1";
 	int port    = 8888;
 	
-	ObjectOutputStream oos;
-	BufferedOutputStream bos;
+	OutputStream out;
+	InputStream  in;
+//	ObjectOutputStream oos;
+//	BufferedOutputStream bos;
 	int bufferSize = 1024*1024;
 	ObjectInputStream ois;
-	BufferedInputStream bis;
+//	BufferedInputStream bis;
 
 	GridPoints gridPoints;
 	
@@ -60,12 +64,29 @@ public class ComputationClient implements CAComputationKernel {
 //		initGridDots();
 	}
 	
-	@Override
+//	@Override
 	public void setSocket(String host, int port) {
 		this.host = host;
 		this.port = port;
 	}
 	
+//	@Override
+	public boolean closeSocket() {
+		if (client == null)
+			return true;
+		try {
+//			System.out.println("*Closing");
+			this.sendMessage("GoodBye");
+			this.client.close();
+			this.client = null;
+//			System.out.println("*Success");
+		} catch (IOException e) {
+			System.err.println("In closeSocket() "+e.getMessage()+client);
+			return false;
+		}
+		return true;
+	}
+
 	@Override
 	public boolean init() {
 		return initClient(host, port);
@@ -73,7 +94,7 @@ public class ComputationClient implements CAComputationKernel {
 	
 	private boolean initClient(String host, int port) {
 		
-		char cbuf[] = new char[512];
+//		char cbuf[] = new char[512];
 		try {
 			System.out.println(" connecting to "+host+":"+port);
 			client = new Socket(host, port);
@@ -85,6 +106,8 @@ public class ComputationClient implements CAComputationKernel {
 //			oos = new ObjectOutputStream(bos);
 			
 //			bis = new BufferedInputStream(client.getInputStream(), bufferSize);
+			in = client.getInputStream();
+			out = client.getOutputStream();
 			ois = new ObjectInputStream(client.getInputStream());
 			System.out.println("ok");
 		} catch (UnknownHostException e) {
@@ -101,6 +124,22 @@ public class ComputationClient implements CAComputationKernel {
 		}
 		return true;
 		
+	}
+	
+	private String waitMessage() throws IOException {
+		byte[] buf = new byte[128];
+		int num = in.read(buf);
+		// XXX clear the test code
+		System.out.println("Get Message" + new String(buf,0,num)+" from "+client.getInetAddress().getHostAddress());
+		
+		return new String(buf,0,num);
+	}
+	
+	private void sendMessage(String msg) throws IOException {
+		// XXX clear the test code
+		System.out.println("Send Message " + new String(msg.getBytes())+" to "+client.getInetAddress().getHostAddress());
+		
+		out.write(msg.getBytes());
 	}
 	
 	/**
@@ -179,12 +218,14 @@ public class ComputationClient implements CAComputationKernel {
 	public boolean update() {
 
 		try {
+			this.sendMessage("RequestGridPoints");
 			gridPoints = (GridPoints)ois.readObject();
 		} catch (ClassNotFoundException e) {
 			System.err.println("ERROR: "+e.getMessage());
 			return false;
 		} catch (IOException e) {
-			System.err.println("ERROR: "+e.getMessage());
+			System.err.println("ERROR in CompuataionClient.update: "+e.getMessage());
+			e.printStackTrace();
 			return false;
 		}
 		return true;
@@ -197,20 +238,6 @@ public class ComputationClient implements CAComputationKernel {
 			return false;
 		else 
 			return true;
-	}
-
-	@Override
-	public boolean closeSocket() {
-		try {
-//			System.out.println("*Closing");
-			this.client.close();
-			this.client = null;
-//			System.out.println("*Success");
-		} catch (IOException e) {
-			System.err.println(e.getMessage()+client);
-			return false;
-		}
-		return true;
 	}
 	
 	/* END of implements of the methods of interface CAComputaionKernel */

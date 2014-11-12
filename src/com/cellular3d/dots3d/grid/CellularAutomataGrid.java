@@ -72,10 +72,6 @@ public class CellularAutomataGrid implements CAComputationKernel {
 		return true;
 	} 
 	
-	@Override
-	public void setSocket(String host, int port) {
-	}
-	
 	private void initGridDots() {
 
 		System.out.println("init GridDots...");
@@ -426,11 +422,6 @@ public class CellularAutomataGrid implements CAComputationKernel {
 //		else 
 //			return true;
 		return initialized;
-	}
-
-	@Override
-	public boolean closeSocket() {
-		return false;
 	}
 
 }

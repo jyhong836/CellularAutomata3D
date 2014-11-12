@@ -1,5 +1,7 @@
 package com.cellular3d;
 
+import java.io.IOException;
+
 import com.cellular3d.dots3d.grid.CAComputationKernel;
 import com.cellular3d.dots3d.grid.CellularAutomataGrid;
 import com.cellular3d.dots3d.grid.ComputationServer;
@@ -91,16 +93,29 @@ public class CellularAutomata3DServer implements Runnable {
 		
 		System.out.println("start socket thread");
 		boolean status = false;;
+		String msg = null;
 		while (runSocketThread) {
-			synchronized (gridPoints) {
-				// FIXME Test it, if we can pass the class include array directly.
-				if (gridPoints.isUpdated()) {
-					status = cs.sendGridPointsArray(gridPoints);
-					socketSendCount++;
-					System.out.println("send pack:"+socketSendCount);
+			try {
+				msg = cs.waitMessage();
+				if (msg==null)
+					continue;
+			} catch (IOException e) {
+				System.out.println(e.getMessage());
+				continue;
+			}
+			if (msg.equals("RequestGridPoints")) {
+				System.out.println("prepare send data");
+				synchronized (gridPoints) {
+					// FIXME Test it, if we can pass the class include array directly.
+					if (gridPoints.isUpdated()) {
+						status = cs.sendGridPointsArray(gridPoints);
+						socketSendCount++;
+						System.out.println("send pack, index:"+socketSendCount);
+					} else 
+						System.out.println("data has not been updated");
 				}
 			}
-			if (!status) {
+			if (msg.equals("GoodBye")) {
 				// TODO 建立通信机制，这里需要进行信息交流确认连接正常
 				cs.waitClient();
 			}

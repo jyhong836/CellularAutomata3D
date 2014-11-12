@@ -109,8 +109,9 @@ public class CA3DClientJFrame extends JFrame implements WindowListener, ActionLi
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals("Connect")) {
+			
 			System.out.println("* connect to freeshell...");
-			JOptionPane.showMessageDialog(this, "connect to freeshell...");
+//			JOptionPane.showMessageDialog(this, "connect to freeshell...");
 			// FIXME 在连接过程中发生其他操作可能会导致问题
 			// FIXME 连接时间过长会导致无法操作
 //			caApplet.displayStatus("");
@@ -119,16 +120,22 @@ public class CA3DClientJFrame extends JFrame implements WindowListener, ActionLi
 				System.out.println("* connect to freeshell...success");
 			} else 
 				System.out.println("* connect to freeshell...failed");
+			
 		} else if(e.getActionCommand().equals("Disconnect")) {
+			
 			System.out.println("* disconnect to freeshell...");
 			if (caApplet.disconnectRemoteKernel()) {
 				this.connectItem.setLabel("Connect");
 				System.out.println("* disconnect to freeshell...ok");
 			}
+			
 		} else if (e.getSource().equals(testConnectItem)) {
+			
 			System.out.println(" test connect to freeshell...");
 			// TODO realize the test method of connect to freeshell
+			
 		} else if (e.getSource().equals(kernelSwitchItem)) {
+			
 			System.out.println(" switch kernel");
 			if (caApplet.switchKernel()) { // to remote
 				this.connectItem.setEnabled(true);
@@ -140,6 +147,7 @@ public class CA3DClientJFrame extends JFrame implements WindowListener, ActionLi
 				this.menu.setLabel("Kernel(LOCAL)");
 			}
 //			connectItem.setEnabled(true);
+			
 		}
 		
 	}

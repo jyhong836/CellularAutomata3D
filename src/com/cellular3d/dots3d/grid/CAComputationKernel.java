@@ -40,9 +40,9 @@ public interface CAComputationKernel {
 	
 	public int getZSize();
 	
-	public void setSocket(String host, int port);
+//	public void setSocket(String host, int port);
 	
-	public boolean closeSocket();
+//	public boolean closeSocket();
 	
 //	public String toString();
 
