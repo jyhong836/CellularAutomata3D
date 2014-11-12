@@ -1,0 +1,219 @@
+package com.cellular3d.dots3d.grid;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
+import java.net.ConnectException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
+import javax.swing.JOptionPane;
+
+public class ComputationClient implements CAComputationKernel {
+	
+	Socket client = null;
+	
+	String host = "127.0.0.1";
+	int port    = 8888;
+	
+	ObjectOutputStream oos;
+	BufferedOutputStream bos;
+	int bufferSize = 1024*1024;
+	ObjectInputStream ois;
+	BufferedInputStream bis;
+
+	GridPoints gridPoints;
+	
+	private int pointsNum = 100;
+	
+//	private int size  = 50;
+	private int xsize = 50;
+	private int ysize = 50;
+	private int zsize = 50;
+	private float  width, depth, height;
+
+	public ComputationClient(int size, float boxscale) {
+		this(size, size, size, boxscale, boxscale, boxscale);
+	}
+	
+	public ComputationClient(int xsize, int ysize, int zsize,
+			float width, float depth, float height) {
+		
+		this.xsize = xsize;
+		this.ysize = ysize;
+		this.zsize = zsize;
+		
+		/* initialize the memory of grid */
+		pointsNum = 0;
+		gridPoints = null;//new GridPoints(xsize, ysize, zsize, width, depth, height);
+//		grid = new GridDot[xsize][ysize][zsize];
+//		gridptr = grid[gridIndex];
+//		gridPtrBuff = grid[gridIndexBuff];
+		
+		// initialize grid dots
+//		initGridDots();
+	}
+	
+	@Override
+	public void setSocket(String host, int port) {
+		this.host = host;
+		this.port = port;
+	}
+	
+	@Override
+	public boolean init() {
+		return initClient(host, port);
+	}
+	
+	private boolean initClient(String host, int port) {
+		
+		char cbuf[] = new char[512];
+		try {
+			System.out.println(" connecting to "+host+":"+port);
+			client = new Socket(host, port);
+			if (client == null)
+				return false;
+			System.out.println(" connect success Socket"+client);
+			System.out.print(" creating streams...");
+//			bos = new BufferedOutputStream(client.getOutputStream(), bufferSize);
+//			oos = new ObjectOutputStream(bos);
+			
+//			bis = new BufferedInputStream(client.getInputStream(), bufferSize);
+			ois = new ObjectInputStream(client.getInputStream());
+			System.out.println("ok");
+		} catch (UnknownHostException e) {
+//			e.printStackTrace();
+			System.err.println(e.getMessage());
+			return false;
+		} catch (ConnectException e) {
+			System.err.println(e.getMessage());
+			JOptionPane.showMessageDialog(null, e.getMessage()+"@"+host+":"+port);
+			return false;
+		} catch (IOException e) {
+			System.err.println(e.getMessage());
+			System.exit(-1);
+		}
+		return true;
+		
+	}
+	
+	/**
+	 * FIXME 这里还需要验证是否已经更新了
+	 */
+	@Override
+	public GridPoints getGridPoints() {
+		return gridPoints;
+	}
+	
+//	public GridDot[][][] getGridDots(int xsize, int ysize, int zsize) {
+//		GridDot[][][] griddots = new GridDot[xsize][ysize][zsize];
+//		
+//		try {
+//			for (GridDot[][] gridDots2 : griddots) {
+//				for (GridDot[] gridDots3 : gridDots2) {
+//					for (GridDot gridDot : gridDots3) {
+//						gridDot = (GridDot)ois.readObject();
+//					}
+//				}
+//			}
+//		} catch (ClassNotFoundException e) {
+//			System.err.println("ERROR: "+e.getMessage());
+//			return null;
+//		} catch (IOException e) {
+//			System.err.println("ERROR: "+e.getMessage());
+//			return null;
+//		}
+//		
+//		return griddots;
+//	}
+
+	/* implement the methods of interface CAComputaionKernel */
+	@Override
+	public int updatePointsNum() {
+		return getPointsNum();
+	}
+
+	@Override
+	public int getPointsNum() {
+		if (gridPoints!=null)
+			return gridPoints.pointsNum;
+		else
+			return 0;
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public GridDot[][][] getGridPtr() {
+		return null;
+	}
+
+	@Override
+	public long getRequiredMemory() {
+		return xsize*ysize*zsize*700;
+	}
+
+	@Override
+	public int getXSize() {
+		return xsize;
+	}
+
+	@Override
+	public int getYSize() {
+		return ysize;
+	}
+
+	@Override
+	public int getZSize() {
+		return zsize;
+	}
+
+	@Override
+	public boolean update() {
+
+		try {
+			gridPoints = (GridPoints)ois.readObject();
+		} catch (ClassNotFoundException e) {
+			System.err.println("ERROR: "+e.getMessage());
+			return false;
+		} catch (IOException e) {
+			System.err.println("ERROR: "+e.getMessage());
+			return false;
+		}
+		return true;
+		
+	}
+	
+	@Override
+	public boolean initialized() {
+		if (client==null)
+			return false;
+		else 
+			return true;
+	}
+
+	@Override
+	public boolean closeSocket() {
+		try {
+//			System.out.println("*Closing");
+			this.client.close();
+			this.client = null;
+//			System.out.println("*Success");
+		} catch (IOException e) {
+			System.err.println(e.getMessage()+client);
+			return false;
+		}
+		return true;
+	}
+	
+	/* END of implements of the methods of interface CAComputaionKernel */
+
+}
+

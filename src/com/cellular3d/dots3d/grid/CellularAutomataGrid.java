@@ -1,20 +1,22 @@
 package com.cellular3d.dots3d.grid;
 
 /**
- * CellularAutomataGrid is a computation only Cellular Automata. 
+ * CellularAutomataGrid is a computation only Cellular Automata and a local
+ * Computation Kernel.
  * @author jyhong (Junyuan Hong/jyhong836@gmail.com) 2014Äê11ÔÂ11ÈÕ
  *
  */
-public class CellularAutomataGrid {
+public class CellularAutomataGrid implements CAComputationKernel {
 	
 	boolean colorMod = false; // TODO: Add colorMod change code
 	
 	private int pointsNum = 100;
+	private boolean initialized = false;
 	
-	private int size  = 50;
-	private int xsize = size;
-	private int ysize = size;
-	private int zsize = size;
+//	private int size  = 50;
+	private int xsize = 50;
+	private int ysize = 50;
+	private int zsize = 50;
 	
 	private GridDot[][][][] grid; 
 	private int             gridIndex = 0;
@@ -33,21 +35,25 @@ public class CellularAutomataGrid {
 	
 	/**
 	 * constructor
-	 * @param scale the width, depth and height will be set to scale*2.
+	 * @param size the xsize, depth and height will be set to scale*2.
 	 * @param parentApplet the Applet will be used to display status.
 	 */
-	public CellularAutomataGrid(float scale) {
-		this(scale*2, scale*2, scale*2);
+	public CellularAutomataGrid(int size) {
+		this(size, size, size);
 	}
 
 	/**
 	 * constructor
-	 * @param width
-	 * @param depth
-	 * @param height
+//	 * @param width
+//	 * @param depth
+//	 * @param height
 	 * @param parentApplet the Applet will be used to display status.
 	 */
-	public CellularAutomataGrid(float width, float depth, float height) {
+	public CellularAutomataGrid(int xsize, int ysize, int zsize) {
+		
+		this.xsize = xsize;
+		this.ysize = ysize;
+		this.zsize = zsize;
 		
 		/* initialize the memory of grid */
 		pointsNum = 0;
@@ -56,7 +62,18 @@ public class CellularAutomataGrid {
 		gridPtrBuff = grid[gridIndexBuff];
 		
 		// initialize grid dots
+//		initGridDots();
+	}
+	
+	@Override
+	public boolean init() {
 		initGridDots();
+		initialized = true;
+		return true;
+	} 
+	
+	@Override
+	public void setSocket(String host, int port) {
 	}
 	
 	private void initGridDots() {
@@ -140,13 +157,13 @@ public class CellularAutomataGrid {
 		
 	}
 	
-	public double getRotXAngle() {
-		return rotXAngle;
-	}
-	
-	public void setRotXAngle(double rotXAngle) {
-		this.rotXAngle = rotXAngle;
-	}
+//	public double getRotXAngle() {
+//		return rotXAngle;
+//	}
+//	
+//	public void setRotXAngle(double rotXAngle) {
+//		this.rotXAngle = rotXAngle;
+//	}
 	
 	public void updateDots() {
 		
@@ -357,6 +374,7 @@ public class CellularAutomataGrid {
 	 * Get the latest version of gridptr.
 	 * @return GridDot[][][] gridptr
 	 */
+	@Override
 	public GridDot[][][] getGridPtr() {
 		return gridptr;
 	}
@@ -383,6 +401,36 @@ public class CellularAutomataGrid {
 						pointsNum++;
 		return pointsNum;
 		
+	}
+
+	@Override
+	public boolean update() {
+		
+		this.updateDots();
+		return true;
+		
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public GridPoints getGridPoints() {
+		return null;
+	}
+	
+	@Override
+	public boolean initialized() {
+//		if (pointsNum==0)
+//			return false;
+//		else 
+//			return true;
+		return initialized;
+	}
+
+	@Override
+	public boolean closeSocket() {
+		return false;
 	}
 
 }

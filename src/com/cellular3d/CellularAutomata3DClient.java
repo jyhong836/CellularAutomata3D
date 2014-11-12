@@ -9,7 +9,7 @@ public class CellularAutomata3DClient {
 		
 		System.out.println("* start CellularAutomata3D in MainFrame *\n");
 		CellularAutomata3DApplet ca3d = new CellularAutomata3DApplet(); // Applet
-		new CellularAutomata3DClientJFrame(ca3d, ca3d.AppletWidth, ca3d.AppletHeight);
+		new CA3DClientJFrame(ca3d, ca3d.AppletWidth, ca3d.AppletHeight);
 
 	}
 
