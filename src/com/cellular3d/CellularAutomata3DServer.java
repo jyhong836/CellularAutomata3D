@@ -53,7 +53,7 @@ public class CellularAutomata3DServer implements Runnable {
 		ysize = caKernel.getYSize();
 		zsize = caKernel.getZSize();
 		gridptr = new GridDot[xsize][ysize][zsize];
-		gridPoints = new GridPoints(xsize, ysize, zsize, boxscale, boxscale, boxscale);
+		gridPoints = new GridPoints(gridsize, boxscale);
 
 		computeThread = new Thread(this);
 		computeThread.start();

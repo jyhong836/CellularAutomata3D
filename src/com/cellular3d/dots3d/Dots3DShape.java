@@ -212,7 +212,7 @@ public class Dots3DShape extends BranchGroup {
 	public void updateDots() {
 		if (caKernel.update()) {
 			this.updatePoints();
-			System.out.println("[Dots3DShape] Update success");
+//			System.out.println("[Dots3DShape] Update success");
 		} else {
 			System.out.println("[Dots3DShape] Not updated");
 		}
@@ -253,8 +253,8 @@ public class Dots3DShape extends BranchGroup {
         	float color = 0f;
         	for (int i = 0; i < points.length; i++) {
 				plaPts[i] = new Point3f(points[i].x, points[i].y, points[i].z);
-				color = (points[i].argb & 0xff)/255f; // TODO This should be change to (a r g b) colors, not only one color.
-				plaCls[i] = new Color4f(0,color,0,1f);
+				color = (points[i].argb)/4.0f; // TODO This should be change to (a r g b) colors, not only one color.
+				plaCls[i] = new Color4f(0, color, 0, 1f);
 			}
         }
 		

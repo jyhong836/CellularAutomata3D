@@ -22,8 +22,6 @@ import javax.vecmath.Point3d;
 import javax.vecmath.Vector3f;
 
 import com.cellular3d.dots3d.Dots3DShape;
-import com.cellular3d.dots3d.grid.CellularAutomataGrid;
-import com.cellular3d.dots3d.grid.ComputationClient;
 import com.sun.j3d.utils.behaviors.vp.OrbitBehavior;
 import com.sun.j3d.utils.universe.SimpleUniverse;
 import com.sun.j3d.utils.universe.ViewingPlatform;

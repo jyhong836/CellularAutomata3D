@@ -17,6 +17,10 @@ public class GridPoints implements Serializable {
 	
 	private boolean isUpdated = false;
 	private int updateCount = 0;
+	
+	public GridPoints(int size, float scale) {
+		this(size, size, size, scale*2, scale*2, scale*2);
+	}
 
 	public GridPoints(int xsize, int ysize, int zsize, 
 			float width, float depth, float height) {
