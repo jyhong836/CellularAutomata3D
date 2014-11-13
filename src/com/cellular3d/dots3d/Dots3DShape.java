@@ -212,8 +212,9 @@ public class Dots3DShape extends BranchGroup {
 	public void updateDots() {
 		if (caKernel.update()) {
 			this.updatePoints();
+			System.out.println("[Dots3DShape] Update success");
 		} else {
-			System.err.println("update dots failed");
+			System.out.println("[Dots3DShape] Not updated");
 		}
 			
 	}

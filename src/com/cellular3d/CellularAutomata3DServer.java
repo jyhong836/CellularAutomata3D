@@ -18,6 +18,7 @@ public class CellularAutomata3DServer implements Runnable {
 	
 	boolean runComputeThread = true;
 	boolean runSocketThread = true;
+	boolean stopComputeThread = true;
 	
 	int socketSendCount = 0;
 
@@ -57,6 +58,7 @@ public class CellularAutomata3DServer implements Runnable {
 		computeThread = new Thread(this);
 		computeThread.start();
 		computeThread.suspend();
+		stopComputeThread = true;
 		socketThread = new Thread(this);
 		socketThread.start();
 	}
@@ -74,8 +76,9 @@ public class CellularAutomata3DServer implements Runnable {
 			gridptr = caKernel.getGridPtr();
 			synchronized (gridPoints) {
 				gridPoints.setValue(gridptr, caKernel.getPointsNum());
+				gridPoints.notifyAll();
 			}
-			System.out.println("CA FPS:"+(1000.0/(System.currentTimeMillis() - msec)));
+//			System.out.println("CA FPS:"+(1000.0/(System.currentTimeMillis() - msec)));
 		}
 	}
 	
@@ -96,30 +99,94 @@ public class CellularAutomata3DServer implements Runnable {
 		String msg = null;
 		while (runSocketThread) {
 			try {
+				System.out.println("wait client request...");
 				msg = cs.waitMessage();
 				if (msg==null)
 					continue;
 			} catch (IOException e) {
-				System.out.println(e.getMessage());
+				System.err.println(e.getMessage());
+				if (e.getMessage().equals("Connection reset")) {
+					cs.waitClient();
+				}
 				continue;
 			}
 			if (msg.equals("RequestGridPoints")) {
 				System.out.println("prepare send data");
-				synchronized (gridPoints) {
-					// FIXME Test it, if we can pass the class include array directly.
-					if (gridPoints.isUpdated()) {
-						status = cs.sendGridPointsArray(gridPoints);
-						socketSendCount++;
-						System.out.println("send pack, index:"+socketSendCount);
-					} else 
+				try {
+					boolean updateStat = false;
+					synchronized (gridPoints) {
+						updateStat = gridPoints.isUpdated();
+					}
+					if (updateStat) {
+						
+						synchronized (gridPoints) {
+							cs.sendMessage("GridPointsDataReady");
+							
+							/* send data */
+							status = cs.sendGridPointsArray(gridPoints);
+							gridPoints.clearUpdateFlag();
+							socketSendCount++;
+							System.out.println("* send GridPoints, index:"+socketSendCount);
+							System.out.println(" |- GridPoints.updatecount:"+gridPoints.getUpdateCount());
+							System.out.println(" |- GridPoints.pointsNum:  "+gridPoints.pointsNum);
+						}
+						
+					} else if (!stopComputeThread) {
+
 						System.out.println("data has not been updated");
+						cs.sendMessage("GridPointsDataNotReady");
+						msg = cs.waitMessage();
+						if (msg.equals("WaitUntilGridPointsUpdate")) {
+							waitUpdate(updateStat); // wait until data is ready.
+							cs.sendMessage("GridPointsDataReady"); // tell client "Ready", but not send data
+						} // XXX else go through??
+						
+					} else if (stopComputeThread) {
+						
+						cs.sendMessage("ComputeThreadStoped");
+						msg = cs.waitMessage();
+						if (msg.equals("StartComputeThread")) {
+							stopComputeThread = !stopComputeThread;
+							computeThread.resume(); // start thread
+							cs.sendMessage("StartComputeThreadOK");
+						}
+						
+					}
+				} catch (IOException e) {
+					System.err.println("**"+e.getMessage());
+					e.printStackTrace();
+				} catch (InterruptedException e) {
+					System.err.println("**"+e.getMessage());
+					e.printStackTrace();
 				}
-			}
-			if (msg.equals("GoodBye")) {
+			} else if (msg.equals("GoodBye")) {
 				// TODO 建立通信机制，这里需要进行信息交流确认连接正常
-				cs.waitClient();
+				cs.waitClient(); // this method will close socket also.
+			}
+//			else if (msg.equals("StartComputation")) {
+//				computeThread.resume();
+//			} else if (msg.equals("StopComputation")) {
+//				computeThread.suspend();
+//			}
+		}
+	}
+	
+	/**
+	 * Wait until GridPoints is updated
+	 * @throws InterruptedException
+	 */
+	private void waitUpdate(boolean updateStat) throws InterruptedException {
+		int cout = 0;
+		while (!updateStat) {
+			System.out.println("["+cout+"] data is not ready, waiting...");
+			synchronized (gridPoints) {
+				gridPoints.wait();
+				System.out.println("check if data is ready...");
+				cout++;
+				updateStat = gridPoints.isUpdated();
 			}
 		}
+		System.out.println("data is ready");
 	}
 
 	@Override

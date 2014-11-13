@@ -1,6 +1,13 @@
 package com.cellular3d.dots3d.grid;
 
-public class Point4 {
+import java.io.Serializable;
+
+public class Point4 implements Serializable {
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7344955551495718602L;
 	
 	public float x, y, z;
 	public int argb;

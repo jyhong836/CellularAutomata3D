@@ -78,7 +78,7 @@ public class ComputationServer {
 		int num = in.read(buf);
 		if (num>0) {
 			// XXX clear the test code
-			System.out.println("Get " +num+" bytes Message:" + new String(buf,0,num)+" from "+accClient.getInetAddress().getHostAddress());
+			System.out.println("[MSG] Recv " + new String(buf,0,num)+" from "+accClient.getInetAddress().getHostAddress());
 			
 			return new String(buf,0,num);
 		} else {
@@ -89,7 +89,7 @@ public class ComputationServer {
 	
 	public void sendMessage(String msg) throws IOException {
 		// XXX clear the test code
-		System.out.println("Send Message" + msg+" to "+accClient.getInetAddress().getHostAddress());
+		System.out.println("[MSG] Send " + msg+" to "+accClient.getInetAddress().getHostAddress());
 		
 		byte[] buf = msg.getBytes();
 		out.write(buf);
@@ -97,6 +97,7 @@ public class ComputationServer {
 	
 	public boolean sendGridPointsArray(GridPoints gridPoints) {
 		try {
+			oos.reset(); // reset the old stat of object, if not do this, will not pass the updated object but the old one.
 			oos.writeObject(gridPoints);
 		} catch (IOException e) {
 			System.err.println("ERROR: "+e.getMessage());

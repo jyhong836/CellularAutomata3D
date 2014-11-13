@@ -1,15 +1,22 @@
 package com.cellular3d.dots3d.grid;
 
-public class GridPoints {
+import java.io.Serializable;
+
+public class GridPoints implements Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1308053840893751234L;
+
 	public Point4 [] points = null;
 	
 	public int xsize, ysize, zsize;
 	public float width, depth, height;
 	public int pointsNum;
-	public int count;
 	
 	private boolean isUpdated = false;
+	private int updateCount = 0;
 
 	public GridPoints(int xsize, int ysize, int zsize, 
 			float width, float depth, float height) {
@@ -23,7 +30,8 @@ public class GridPoints {
 	
 	public void setValue(GridDot[][][] gridptr,
 			int pointsNum) {
-		count = 0;
+		int count = 0;
+		this.pointsNum = pointsNum;
 		this.points = new Point4[pointsNum];
 		for (int i = 0; i < xsize; i++)
 			for (int j = 0; j < ysize; j++)
@@ -34,10 +42,24 @@ public class GridPoints {
 						count++;
 					}
 		isUpdated = true;
+		updateCount++;
 	}
 	
 	public boolean isUpdated() {
 		return isUpdated;
+	}
+	
+	public void clearUpdateFlag() { 
+		isUpdated = false;
+	}
+	
+	public int getUpdateCount() {
+		return updateCount;
+	}
+	
+	public void clear() {
+		this.isUpdated = false;
+		this.updateCount = 0;
 	}
 
 }

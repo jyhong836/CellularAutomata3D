@@ -130,14 +130,14 @@ public class ComputationClient implements CAComputationKernel {
 		byte[] buf = new byte[128];
 		int num = in.read(buf);
 		// XXX clear the test code
-		System.out.println("Get Message" + new String(buf,0,num)+" from "+client.getInetAddress().getHostAddress());
+		System.out.println("[MSG] Recv " + new String(buf,0,num)+" from "+client.getInetAddress().getHostAddress());
 		
 		return new String(buf,0,num);
 	}
 	
 	private void sendMessage(String msg) throws IOException {
 		// XXX clear the test code
-		System.out.println("Send Message " + new String(msg.getBytes())+" to "+client.getInetAddress().getHostAddress());
+		System.out.println("[MSG] Send " + new String(msg.getBytes())+" to "+client.getInetAddress().getHostAddress());
 		
 		out.write(msg.getBytes());
 	}
@@ -219,7 +219,29 @@ public class ComputationClient implements CAComputationKernel {
 
 		try {
 			this.sendMessage("RequestGridPoints");
-			gridPoints = (GridPoints)ois.readObject();
+			String msg = this.waitMessage();
+			if (msg.equals("GridPointsDataReady")) {
+				gridPoints = (GridPoints)ois.readObject();
+				System.out.println("* Get gridpoints");
+				System.out.println(" |- GridPoints.updatecount:"+gridPoints.getUpdateCount());
+				System.out.println(" |- GridPoints.pointsNum:  "+gridPoints.pointsNum);
+				System.out.println(" |- GridPoints.update:     "+gridPoints.isUpdated());
+				return true;
+			} else if (msg.equals("GridPointsDataNotReady")) {
+				System.out.println("* Remote Data is not ready, wait until ready...");
+				this.sendMessage("WaitUntilGridPointsUpdate");
+				msg = this.waitMessage();
+				if (msg.equals("GridPointsDataReady")) {
+					System.out.println("Data is ready but not read");
+//					return update(); // TODO 更新已经准备好了，一定要马上传输吗？会陷入死循环吗？
+				}
+			} else if (msg.equals("ComputeThreadStoped")) {
+				this.sendMessage("StartComputeThread");
+				System.out.println("start remote compute thread...");
+				msg = this.waitMessage();
+				if (msg.equals("StartComputeThreadOK"))
+					System.out.println("start remote compute thread...ok");
+			}
 		} catch (ClassNotFoundException e) {
 			System.err.println("ERROR: "+e.getMessage());
 			return false;
@@ -228,7 +250,7 @@ public class ComputationClient implements CAComputationKernel {
 			e.printStackTrace();
 			return false;
 		}
-		return true;
+		return false;
 		
 	}
 	
