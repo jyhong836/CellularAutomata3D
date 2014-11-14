@@ -282,7 +282,7 @@ public class ComputationClient implements CAComputationKernel {
 			System.err.println("ERROR in "+this.getClass().getSimpleName()+".update():"+e.getMessage());
 			System.err.flush();
 //			System.err.flush();
-			if (e.getMessage().equals("Socket closed"));
+			if (e.getMessage().equals("Socket Closed"));
 			else if (e.getMessage().equals("Read timed out")) {
 				this.clearBuf();
 			} else if (e.getMessage().equals("Not in GZIP format")) {

@@ -39,6 +39,11 @@ public class CA3DClientJFrame extends JFrame implements WindowListener, ActionLi
 	private MenuItem kernelSwitchItem;
 	private MenuItem connectItem;
 	private MenuItem testConnectItem;
+	private MenuItem setItem; 
+	
+	private Menu     serverMenu;
+	private MenuItem localhostItem;
+	private MenuItem freeshellItem;
 
 	public CA3DClientJFrame(CellularAutomata3DApplet app, int width, int height) {
 		this.addWindowListener(this);
@@ -64,15 +69,30 @@ public class CA3DClientJFrame extends JFrame implements WindowListener, ActionLi
 		connectItem.setEnabled(false);
 		testConnectItem = new MenuItem("Test connect");
 		testConnectItem.setEnabled(false);
+		setItem = new MenuItem("Configure");
+		serverMenu = new Menu("Server");
+		localhostItem = new MenuItem("localhost");
+		localhostItem.setEnabled(false);
+		freeshellItem = new MenuItem("freeshell");
 		mb.add(menu);
 		menu.add(kernelSwitchItem);
 		menu.add(connectItem);
 		menu.add(testConnectItem);
+		menu.add(setItem);
+		menu.add(serverMenu);
+		
+		serverMenu.add(localhostItem);
+		serverMenu.add(freeshellItem);
+
 		this.setMenuBar(mb);
 		
 		kernelSwitchItem.addActionListener(this);
 		connectItem.addActionListener(this);
 		testConnectItem.addActionListener(this);
+		setItem.addActionListener(this);
+		
+		localhostItem.addActionListener(this);
+		freeshellItem.addActionListener(this);
 		
 		this.setVisible(true);
 	}
@@ -148,6 +168,18 @@ public class CA3DClientJFrame extends JFrame implements WindowListener, ActionLi
 			}
 //			connectItem.setEnabled(true);
 			
+		} else if (e.getSource().equals(setItem)) {
+			// TODO create code for config dialog
+			new CA3DClientConfigureJDialog();
+			
+		} else if (e.getSource().equals(localhostItem)) {
+			caApplet.setServer("localhost", 8000);
+			localhostItem.setEnabled(false);
+			freeshellItem.setEnabled(true);
+		} else if (e.getSource().equals(freeshellItem)) {
+			caApplet.setServer("ssh.freeshell.ustc.edu.cn", 48912);
+			freeshellItem.setEnabled(false);
+			localhostItem.setEnabled(true);
 		}
 		
 	}

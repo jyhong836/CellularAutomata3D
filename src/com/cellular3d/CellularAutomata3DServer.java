@@ -95,6 +95,8 @@ public class CellularAutomata3DServer implements Runnable {
 	
 	/**
 	 * This loop is used for computation
+	 * 
+	 * FIXME 已知的问题，在进行计算的过程中强行中断连接会导致问题，原因是同步没有做好，中断刚好发生在数据交换的过程中。
 	 */
 	private void computeLoop() {
 		
@@ -298,10 +300,15 @@ public class CellularAutomata3DServer implements Runnable {
 		while (!updateStat) {
 			System.out.println("["+cout+"] data is not ready, waiting...");
 			synchronized (gridPoints) {
-				gridPoints.wait();
+				gridPoints.wait(10000); // max wait time
 				System.out.println("check if data is ready...");
 				cout++;
 				updateStat = gridPoints.isUpdated();
+			}
+			if (cout>10)
+			{
+				System.out.println("ERROR: the computation can not be updated, exit...");
+				System.exit(-1);
 			}
 		}
 		System.out.println("data is ready");

@@ -51,6 +51,8 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 	
 	/* Dots3DShape */
 	Dots3DShape dots3d;
+	private String host = "localhost";
+	private int port = 8000;
 	
 	/* java3d objects */
 	BranchGroup group;
@@ -400,10 +402,18 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 		}
 	}
 	
+	public void setServer(String host, int port) {
+		System.out.println("Configure server: "+host+":"+port);
+		this.host = host;
+		this.port = port;
+	}
+	
 	public boolean connectRemoteKernel() {
 		if (dots3d.isRemoteKernel()) {
 			// REMOTE
-			return dots3d.connectRemoteKernel("127.0.0.1", 8000);
+			return dots3d.connectRemoteKernel(this.host, this.port);
+//			return dots3d.connectRemoteKernel("ssh.freeshell.ustc.edu.cn", 48912);
+			
 		}
 		return false;
 	}
