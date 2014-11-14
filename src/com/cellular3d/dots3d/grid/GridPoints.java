@@ -32,8 +32,23 @@ public class GridPoints implements Serializable {
 		this.height = height;
 	}
 	
+	public void copy(GridPoints gridPoints) {
+		this.xsize = gridPoints.xsize;
+		this.ysize = gridPoints.ysize;
+		this.zsize = gridPoints.zsize;
+		this.width = gridPoints.width;
+		this.depth = gridPoints.depth;
+		this.height = gridPoints.height;
+		this.pointsNum = gridPoints.pointsNum;
+		this.updateCount = gridPoints.getUpdateCount();
+		this.points = new Point4[pointsNum];
+		for (int i = 0; i < gridPoints.points.length; i++) {
+			this.points[i] = gridPoints.points[i];
+		}
+	}
+	
 	public void setValue(GridDot[][][] gridptr,
-			int pointsNum) {
+			int pointsNum, int updateCount) {
 		int count = 0;
 		this.pointsNum = pointsNum;
 		this.points = new Point4[pointsNum];
@@ -46,7 +61,8 @@ public class GridPoints implements Serializable {
 						count++;
 					}
 		isUpdated = true;
-		updateCount++;
+		this.updateCount = updateCount;
+//		System.out.println("pointsNum:"+pointsNum+" Count:"+count);
 	}
 	
 	public boolean isUpdated() {

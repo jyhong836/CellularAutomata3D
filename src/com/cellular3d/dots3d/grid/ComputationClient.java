@@ -14,8 +14,13 @@ import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipException;
+import java.util.zip.ZipInputStream;
 
 import javax.swing.JOptionPane;
+
+//FIXME 目前同步锁的设定是不合理的，最好在class内部设定
 
 public class ComputationClient implements CAComputationKernel {
 	
@@ -23,17 +28,18 @@ public class ComputationClient implements CAComputationKernel {
 	
 	String host = "127.0.0.1";
 	int port    = 8888;
+	float timeout = 1;
 	
 	OutputStream out;
 	InputStream  in;
 //	ObjectOutputStream oos;
 //	BufferedOutputStream bos;
-	int bufferSize = 1024*1024;
-	ObjectInputStream ois;
+//	int bufferSize = 1024*1024;
+//	ObjectInputStream ois;
 //	BufferedInputStream bis;
 
 	GridPoints gridPoints;
-	
+	private int updateCount = 0;
 	private int pointsNum = 100;
 	
 //	private int size  = 50;
@@ -72,17 +78,25 @@ public class ComputationClient implements CAComputationKernel {
 	
 //	@Override
 	public boolean closeSocket() {
-		if (client == null)
+		System.out.println("[SOCKET] closing socket...");
+		if (client == null) {
+			System.out.println("[SOCKET] client is null. client socket is already closed");
 			return true;
-		try {
-//			System.out.println("*Closing");
+		} try {
+			System.out.println("[SOCKET] Closing");
 			this.sendMessage("GoodBye");
 			this.client.close();
 			this.client = null;
-//			System.out.println("*Success");
+			System.out.println("[SOCKET] close success");
 		} catch (IOException e) {
-			System.err.println("In closeSocket() "+e.getMessage()+client);
-			return false;
+			if (e.getMessage().equals("Socket closed")) {
+				System.out.println("[SOCKET] socket has been closed");
+				this.client = null;
+				return true;
+			} else {
+				System.err.println("ERROR in closeSocket() "+e.getMessage()+" "+client);
+				return false;
+			}
 		}
 		return true;
 	}
@@ -100,6 +114,8 @@ public class ComputationClient implements CAComputationKernel {
 			client = new Socket(host, port);
 			if (client == null)
 				return false;
+			client.setKeepAlive(true);
+			client.setSoTimeout((int)(timeout*1000));
 			System.out.println(" connect success Socket"+client);
 			System.out.print(" creating streams...");
 //			bos = new BufferedOutputStream(client.getOutputStream(), bufferSize);
@@ -108,7 +124,11 @@ public class ComputationClient implements CAComputationKernel {
 //			bis = new BufferedInputStream(client.getInputStream(), bufferSize);
 			in = client.getInputStream();
 			out = client.getOutputStream();
-			ois = new ObjectInputStream(client.getInputStream());
+//			ZipInputStream zis = new ZipInputStream(in);
+			
+//			ois = new ObjectInputStream(in);
+//			ois = new ObjectInputStream(new GZIPInputStream(in));
+			
 			System.out.println("ok");
 		} catch (UnknownHostException e) {
 //			e.printStackTrace();
@@ -119,7 +139,8 @@ public class ComputationClient implements CAComputationKernel {
 			JOptionPane.showMessageDialog(null, e.getMessage()+"@"+host+":"+port);
 			return false;
 		} catch (IOException e) {
-			System.err.println(e.getMessage());
+			System.err.println("ERROR in initClient: "+e.getMessage());
+			e.printStackTrace();
 			System.exit(-1);
 		}
 		return true;
@@ -129,18 +150,25 @@ public class ComputationClient implements CAComputationKernel {
 	private String waitMessage() throws IOException {
 		byte[] buf = new byte[128];
 		int num = in.read(buf);
-		// XXX clear the test code
 		System.out.println("[MSG] Recv " + new String(buf,0,num)+" from "+client.getInetAddress().getHostAddress());
 		
 		return new String(buf,0,num);
 	}
 	
 	private void sendMessage(String msg) throws IOException {
-		// XXX clear the test code
 		System.out.println("[MSG] Send " + new String(msg.getBytes())+" to "+client.getInetAddress().getHostAddress());
 		
-		out.write(msg.getBytes());
+		try {
+			out.write(msg.getBytes());
+		} catch (IOException e) {
+			System.out.println("[MSG] Send "+msg+" FAILED for "+e.getMessage());
+			throw e;
+		}
 	}
+	
+//	private void flushSendMessage() throws IOException {
+//		out.flush();
+//	}
 	
 	/**
 	 * FIXME 这里还需要验证是否已经更新了
@@ -215,25 +243,49 @@ public class ComputationClient implements CAComputationKernel {
 	}
 
 	@Override
-	public boolean update() {
+	public boolean update() throws IOException {
 
 		try {
 			this.sendMessage("RequestGridPoints");
 			String msg = this.waitMessage();
 			if (msg.equals("GridPointsDataReady")) {
+				
+				/* init */
+				GZIPInputStream gzipis = new GZIPInputStream(in);
+				ObjectInputStream ois = new ObjectInputStream(gzipis);
+				
+				/* read */
 				gridPoints = (GridPoints)ois.readObject();
-				System.out.println("* Get gridpoints");
-				System.out.println(" |- GridPoints.updatecount:"+gridPoints.getUpdateCount());
-				System.out.println(" |- GridPoints.pointsNum:  "+gridPoints.pointsNum);
-				System.out.println(" |- GridPoints.update:     "+gridPoints.isUpdated());
+				
+				System.out.println("Read Object Ok, waiting FIN MSG...");
+				this.sendMessage("GridPointsOK");
+				msg = this.waitMessage();
+				if (msg.equals("SendPointsGridFinished")) {
+
+					this.updateCount = gridPoints.getUpdateCount();
+					System.out.println("* Get gridpoints");
+					System.out.println(" |- GridPoints.updatecount:"+updateCount);
+					System.out.println(" |- GridPoints.pointsNum:  "+gridPoints.pointsNum);
+					System.out.println(" |- GridPoints.update:     "+gridPoints.isUpdated());
+					
+				} else {
+					System.out.println("Expect MSG:SendPointsGridFinished, but receive:"+msg+" Eixt...");
+					this.clearBuf();
+//					System.exit(-1);
+				}
+				
+				/* close */
+//				gzipis.close();
+//				ois.close();
+				
 				return true;
+				
 			} else if (msg.equals("GridPointsDataNotReady")) {
 				System.out.println("* Remote Data is not ready, wait until ready...");
 				this.sendMessage("WaitUntilGridPointsUpdate");
 				msg = this.waitMessage();
 				if (msg.equals("GridPointsDataReady")) {
 					System.out.println("Data is ready but not read");
-//					return update(); // TODO 更新已经准备好了，一定要马上传输吗？会陷入死循环吗？
 				}
 			} else if (msg.equals("ComputeThreadStoped")) {
 				this.sendMessage("StartComputeThread");
@@ -241,25 +293,52 @@ public class ComputationClient implements CAComputationKernel {
 				msg = this.waitMessage();
 				if (msg.equals("StartComputeThreadOK"))
 					System.out.println("start remote compute thread...ok");
+			} else {
+				System.out.println("Unknown MSG: "+msg);
+//				this.flushSendMessage();
+				this.clearBuf();
+				this.sendMessage("UnknownMSG");
 			}
 		} catch (ClassNotFoundException e) {
 			System.err.println("ERROR: "+e.getMessage());
 			return false;
 		} catch (IOException e) {
-			System.err.println("ERROR in CompuataionClient.update: "+e.getMessage());
-			e.printStackTrace();
-			return false;
+			System.out.flush();
+			System.err.println("ERROR in "+this.getClass().getSimpleName()+".update():"+e.getMessage());
+			System.err.flush();
+//			System.err.flush();
+			if (e.getMessage().equals("Socket closed"));
+			else if (e.getMessage().equals("Read timed out")) {
+				this.clearBuf();
+			} else if (e.getMessage().equals("Not in GZIP format")) {
+				this.clearBuf();
+			}
+			else {
+				e.printStackTrace();
+				throw e;
+			}
+//			return false;
 		}
 		return false;
 		
 	}
 	
+	private void clearBuf() throws IOException {
+		int num = in.available();
+		in.skip(num);
+	}
+
 	@Override
 	public boolean initialized() {
 		if (client==null)
 			return false;
 		else 
 			return true;
+	}
+
+	@Override
+	public int getCount() {
+		return updateCount;
 	}
 	
 	/* END of implements of the methods of interface CAComputaionKernel */

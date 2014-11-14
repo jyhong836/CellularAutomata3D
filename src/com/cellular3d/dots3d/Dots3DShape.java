@@ -1,5 +1,7 @@
 package com.cellular3d.dots3d;
 
+import java.io.IOException;
+
 import javax.media.j3d.Appearance;
 import javax.media.j3d.BranchGroup;
 import javax.media.j3d.ColoringAttributes;
@@ -152,14 +154,27 @@ public class Dots3DShape extends BranchGroup {
 	 */
 	public void setLocalKernel() {
 		
-		this.displayStatus("init local kernel...");
-		System.out.println("* init local kernel...");
-		/* intialize CellularAutomataGrid */
-		caKernel = new CellularAutomataGrid(xsize, ysize, zsize);
-		caKernel.init();
-		gridptr = caKernel.getGridPtr();
-		this.pointsNum = caKernel.getPointsNum();
-		gridPoints = null;
+		if (caKernel!=null)
+			synchronized (caKernel) {
+				this.displayStatus("init local kernel...");
+				System.out.println("* init local kernel...");
+				/* intialize CellularAutomataGrid */
+				caKernel = new CellularAutomataGrid(xsize, ysize, zsize);
+				caKernel.init();
+				gridptr = caKernel.getGridPtr();
+				this.pointsNum = caKernel.getPointsNum();
+				gridPoints = null;
+			}
+		else { // null, then it's impossible for lock
+			this.displayStatus("init local kernel...");
+			System.out.println("* init local kernel...");
+			/* intialize CellularAutomataGrid */
+			caKernel = new CellularAutomataGrid(xsize, ysize, zsize);
+			caKernel.init();
+			gridptr = caKernel.getGridPtr();
+			this.pointsNum = caKernel.getPointsNum();
+			gridPoints = null;
+		}
 
 		System.out.println("* local kernel ready");
 		this.displayStatus("local kernel ready");
@@ -172,11 +187,21 @@ public class Dots3DShape extends BranchGroup {
 	 * ) as the CAComputationKernel.
 	 */
 	public void setRemoteKernel() {
-		this.caKernel = new ComputationClient(this.xsize, this.ysize, this.zsize,
-				this.width, this.depth, this.height);
-		gridPoints = caKernel.getGridPoints();
-		this.pointsNum = caKernel.getPointsNum();
-		gridptr = null;
+		if (caKernel!=null)
+			synchronized (caKernel) {
+				this.caKernel = new ComputationClient(this.xsize, this.ysize, this.zsize,
+						this.width, this.depth, this.height);
+				gridPoints = caKernel.getGridPoints();
+				this.pointsNum = caKernel.getPointsNum();
+				gridptr = null;
+			}
+		else {
+			this.caKernel = new ComputationClient(this.xsize, this.ysize, this.zsize,
+					this.width, this.depth, this.height);
+			gridPoints = caKernel.getGridPoints();
+			this.pointsNum = caKernel.getPointsNum();
+			gridptr = null;
+		}
 		
 		displayStatus("use remote kernel, not init");
 	}
@@ -208,13 +233,17 @@ public class Dots3DShape extends BranchGroup {
 	 * <p>Update dots in CA grid with the method of CellularAutomataGrid. And update points
 	 * of 3D Shape at the same time.</p>
 	 * <p>This method should be called every time it's need to update dots in the 3D box.</p>
+	 * @throws IOException 
 	 */
-	public void updateDots() {
-		if (caKernel.update()) {
-			this.updatePoints();
-//			System.out.println("[Dots3DShape] Update success");
-		} else {
-			System.out.println("[Dots3DShape] Not updated");
+	public int updateDots() throws IOException {
+		synchronized (caKernel) {
+			if (caKernel.update()) {
+				this.updatePoints();
+//				System.out.println("[Dots3DShape] Update success");
+			} else {
+				System.out.println("[Dots3DShape] Not updated");
+			}
+			return caKernel.getCount();
 		}
 			
 	}

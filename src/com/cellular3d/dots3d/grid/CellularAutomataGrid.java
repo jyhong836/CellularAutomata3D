@@ -12,6 +12,7 @@ public class CellularAutomataGrid implements CAComputationKernel {
 	
 	private int pointsNum = 100;
 	private boolean initialized = false;
+	private int updateCount = 0;
 	
 //	private int size  = 50;
 	private int xsize = 50;
@@ -403,6 +404,7 @@ public class CellularAutomataGrid implements CAComputationKernel {
 	public boolean update() {
 		
 		this.updateDots();
+		updateCount++;
 		return true;
 		
 	}
@@ -422,6 +424,11 @@ public class CellularAutomataGrid implements CAComputationKernel {
 //		else 
 //			return true;
 		return initialized;
+	}
+
+	@Override
+	public int getCount() {
+		return updateCount;
 	}
 
 }

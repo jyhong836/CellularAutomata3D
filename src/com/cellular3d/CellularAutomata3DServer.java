@@ -31,6 +31,7 @@ public class CellularAutomata3DServer implements Runnable {
 	int zsize;
 	GridDot[][][] gridptr;
 	GridPoints gridPoints;
+	GridPoints gridPoints2; 
 
 	/**
 	 * Main method for server application
@@ -54,6 +55,7 @@ public class CellularAutomata3DServer implements Runnable {
 		zsize = caKernel.getZSize();
 		gridptr = new GridDot[xsize][ysize][zsize];
 		gridPoints = new GridPoints(gridsize, boxscale);
+		gridPoints2 = new GridPoints(gridsize, boxscale);
 
 		computeThread = new Thread(this);
 		computeThread.start();
@@ -71,13 +73,19 @@ public class CellularAutomata3DServer implements Runnable {
 		
 		while (runComputeThread) {
 			msec = System.currentTimeMillis();
-			caKernel.update();
+			try {
+				caKernel.update();
+			} catch (IOException e) {
+				System.out.println("Unknown error. exit...");
+				System.exit(-1);
+			}
 			caKernel.updatePointsNum();
 			gridptr = caKernel.getGridPtr();
-			synchronized (gridPoints) {
-				gridPoints.setValue(gridptr, caKernel.getPointsNum());
+			synchronized (gridPoints) { 
+				gridPoints.setValue(gridptr, caKernel.getPointsNum(), caKernel.getCount());
 				gridPoints.notifyAll();
 			}
+			System.out.println("[Computing] pointsNum:"+gridPoints.pointsNum+" Count:"+gridPoints.getUpdateCount());
 //			System.out.println("CA FPS:"+(1000.0/(System.currentTimeMillis() - msec)));
 		}
 	}
@@ -105,8 +113,18 @@ public class CellularAutomata3DServer implements Runnable {
 					continue;
 			} catch (IOException e) {
 				System.err.println(e.getMessage());
-				if (e.getMessage().equals("Connection reset")) {
+				if (e.getMessage().equals("Connection reset") || e.getMessage().equals("socket closed")) {
+					computeThread.suspend();
 					cs.waitClient();
+				} else if (e.getMessage().equals("Read timed out")) {
+					try {
+						cs.clearBuf();
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				} else {
+					e.printStackTrace();
+					System.exit(-1);
 				}
 				continue;
 			}
@@ -120,6 +138,11 @@ public class CellularAutomata3DServer implements Runnable {
 					if (updateStat) {
 						
 						synchronized (gridPoints) {
+							gridPoints2.copy(gridPoints);
+//							gridPoints2 = (GridPoints)gridPoints.clone();
+						}
+						
+						synchronized (gridPoints2) {
 							cs.sendMessage("GridPointsDataReady");
 							
 							/* send data */
@@ -161,7 +184,23 @@ public class CellularAutomata3DServer implements Runnable {
 				}
 			} else if (msg.equals("GoodBye")) {
 				// TODO 建立通信机制，这里需要进行信息交流确认连接正常
+				computeThread.suspend();
 				cs.waitClient(); // this method will close socket also.
+			} else if(msg.equals("UnknownMSG")) {
+				try {
+//					cs.flushSendMessage();
+					cs.clearBuf();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			} else {
+				System.out.println("Unknown MSG: "+msg);
+				try {
+//					cs.flushSendMessage();
+					cs.clearBuf();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 //			else if (msg.equals("StartComputation")) {
 //				computeThread.resume();

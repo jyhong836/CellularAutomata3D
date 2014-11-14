@@ -1,5 +1,7 @@
 package com.cellular3d.dots3d.grid;
 
+import java.io.IOException;
+
 /**
  * The interface of Cellular Automata Compation Kernel. The subclass include
  * {@linkplain com.cellular3d.dots3d.grid.CellularAutomataGrid CellularAutomataGrid} 
@@ -17,7 +19,7 @@ public interface CAComputationKernel {
 	
 	public int getPointsNum();
 	
-	public boolean update();
+	public boolean update() throws IOException;
 	
 	/**
 	 * This method does not always work.
@@ -39,6 +41,8 @@ public interface CAComputationKernel {
 	public int getYSize();
 	
 	public int getZSize();
+	
+	public int getCount();
 	
 //	public void setSocket(String host, int port);
 	

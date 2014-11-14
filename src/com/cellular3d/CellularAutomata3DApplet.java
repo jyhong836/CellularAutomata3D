@@ -7,6 +7,7 @@ import java.awt.TextArea;
 import java.awt.TextField;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.IOException;
 
 import javax.media.j3d.BoundingSphere;
 import javax.media.j3d.BranchGroup;
@@ -264,7 +265,9 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 //		if (!stopRotateThread) {
 //			System.out.println("rotating...");
 			/* rotate */
+//		synchronized (dots3d) {
 			dots3d.rotX(.01);
+//		}
 			this.repaint();
 			
 			try {
@@ -284,16 +287,30 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 //		}
 	}
 	
-	private synchronized void computThreadMethod() {
+	private void computThreadMethod() {
 		if (!stopComputThread) {
 			long msec = System.currentTimeMillis();
-			dots3d.updateDots();
-			this.displayCAStatus(" CA FPS: "+(1000/(System.currentTimeMillis() - msec))+" COUNT: "+(++caRunCount));
+			int upcount = 0;
+//			synchronized (dots3d) {
+			try {
+				upcount = dots3d.updateDots();
+			} catch (IOException e) {
+				if (this.disconnectRemoteKernel()) {
+					System.out.println("Disconnect Remote Kernel Success");
+				}
+			}
+//			}
+			try {
+				this.displayCAStatus(" CA FPS: "+(1000/(System.currentTimeMillis() - msec))+" COUNT:"+(++caRunCount)+" UPDATE:"+upcount);
+			} catch (ArithmeticException e) {
+			}
 			this.updateMessage();
 	//		repaint();
 		} else {
 			try {
-				this.wait();
+				synchronized (dots3d) {
+					dots3d.wait();
+				}
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -354,7 +371,6 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 //			try {
 //				rotateThread.wait();
 //			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
 //				e.printStackTrace();
 //			}
 		else
@@ -362,7 +378,7 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 //			notifyAll();
 	}
 	
-	private synchronized void switchComputationThreadStat() { // start or stop CA computation
+	private void switchComputationThreadStat() { // start or stop CA computation
 		stopComputThread = !stopComputThread;
 		System.out.println("KEYBOARD: " + ((stopComputThread)?"stop":"start")+" computation");
 		if (stopComputThread) {
@@ -372,7 +388,9 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 			if (dots3d.computationReady()) {
 				System.out.println("restart compuation...");
 //				computThread.resume(); // resume it
-				notifyAll();
+				synchronized (dots3d) {
+					dots3d.notifyAll();
+				}
 //				System.out.println("success");
 			} else { 
 				StringBuffer msg = new StringBuffer("Computation is not ready!");
@@ -395,7 +413,12 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 		return false;
 	}
 	
+	/**
+	 * stop the computThread and then disconnect to remote kernel, if it's a remote kernel
+	 * @return
+	 */
 	public synchronized boolean disconnectRemoteKernel() { // 避免被同样是同步方法的方法调用
+		System.out.println("Disconnect Remote Kernel");
 		/* stop the computThread firstly */
 		if (!stopComputThread) {
 			stopComputThread = !stopComputThread;
@@ -414,25 +437,28 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 	 * Switch computation kernel of Cellular Automata.
 	 * @return true, if switch from local to remote.
 	 */
-	public synchronized boolean switchKernel() {
+	public boolean switchKernel() {
 		/* stop the computThread firstly */
 		if (!stopComputThread) {
 			stopComputThread = !stopComputThread;
 //			computThread.suspend();
 			this.displayCAStatus(" CA [STOP] COUNT: "+caRunCount);
 		}
-		caRunCount = 0;
-//		displayStatus(dots3d.currentKernelString());
-		if (dots3d.isLocalKernel()) {
-			// LOCAL to REMOTE
-			displayStatus("switch from local to remote");
-			dots3d.setRemoteKernel();
-		} else if (dots3d.isRemoteKernel()) {
-			// REMOTE to LOCAL
-			displayStatus("switch from remote to local"); // 用同步锁锁定dots3d
-			dots3d.disconnectRemoteKernel(); // ATTENTION: should close the socket firstly
-			dots3d.setLocalKernel(); // FIXME 使用线程的suspend方法会导致从预料之外的地方执行，使得切换失败
-			return false;
+		synchronized (dots3d) {
+			
+			caRunCount = 0;
+	//		displayStatus(dots3d.currentKernelString());
+			if (dots3d.isLocalKernel()) {
+				// LOCAL to REMOTE
+				displayStatus("switch from local to remote");
+				dots3d.setRemoteKernel();
+			} else if (dots3d.isRemoteKernel()) {
+				// REMOTE to LOCAL
+				displayStatus("switch from remote to local"); // 用同步锁锁定dots3d
+				dots3d.disconnectRemoteKernel(); // ATTENTION: should close the socket firstly
+				dots3d.setLocalKernel();
+				return false;
+			}
 		}
 		return true;
 	}
