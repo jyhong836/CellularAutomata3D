@@ -189,15 +189,13 @@ public class Dots3DShape extends BranchGroup {
 	public void setRemoteKernel() {
 		if (caKernel!=null)
 			synchronized (caKernel) {
-				this.caKernel = new ComputationClient(this.xsize, this.ysize, this.zsize,
-						this.width, this.depth, this.height);
+				this.caKernel = new ComputationClient(this.xsize, this.ysize, this.zsize);
 				gridPoints = caKernel.getGridPoints();
 				this.pointsNum = caKernel.getPointsNum();
 				gridptr = null;
 			}
 		else {
-			this.caKernel = new ComputationClient(this.xsize, this.ysize, this.zsize,
-					this.width, this.depth, this.height);
+			this.caKernel = new ComputationClient(this.xsize, this.ysize, this.zsize);
 			gridPoints = caKernel.getGridPoints();
 			this.pointsNum = caKernel.getPointsNum();
 			gridptr = null;

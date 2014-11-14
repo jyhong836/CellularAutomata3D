@@ -27,56 +27,40 @@ public class ComputationClient implements CAComputationKernel {
 	Socket client = null;
 	
 	String host = "127.0.0.1";
-	int port    = 8888;
+	int port    = 8000;
 	float timeout = 1;
 	
 	OutputStream out;
 	InputStream  in;
-//	ObjectOutputStream oos;
-//	BufferedOutputStream bos;
-//	int bufferSize = 1024*1024;
-//	ObjectInputStream ois;
-//	BufferedInputStream bis;
 
 	GridPoints gridPoints;
 	private int updateCount = 0;
-	private int pointsNum = 100;
 	
 //	private int size  = 50;
 	private int xsize = 50;
 	private int ysize = 50;
 	private int zsize = 50;
-	private float  width, depth, height;
+//	private float  width, depth, height;
 
 	public ComputationClient(int size, float boxscale) {
-		this(size, size, size, boxscale, boxscale, boxscale);
+		this(size, size, size);
 	}
 	
-	public ComputationClient(int xsize, int ysize, int zsize,
-			float width, float depth, float height) {
+	public ComputationClient(int xsize, int ysize, int zsize) {
 		
 		this.xsize = xsize;
 		this.ysize = ysize;
 		this.zsize = zsize;
 		
-		/* initialize the memory of grid */
-		pointsNum = 0;
-		gridPoints = null;//new GridPoints(xsize, ysize, zsize, width, depth, height);
-//		grid = new GridDot[xsize][ysize][zsize];
-//		gridptr = grid[gridIndex];
-//		gridPtrBuff = grid[gridIndexBuff];
+		gridPoints = null;
 		
-		// initialize grid dots
-//		initGridDots();
 	}
 	
-//	@Override
 	public void setSocket(String host, int port) {
 		this.host = host;
 		this.port = port;
 	}
 	
-//	@Override
 	public boolean closeSocket() {
 		System.out.println("[SOCKET] closing socket...");
 		if (client == null) {
@@ -108,7 +92,6 @@ public class ComputationClient implements CAComputationKernel {
 	
 	private boolean initClient(String host, int port) {
 		
-//		char cbuf[] = new char[512];
 		try {
 			System.out.println(" connecting to "+host+":"+port);
 			client = new Socket(host, port);
@@ -118,24 +101,17 @@ public class ComputationClient implements CAComputationKernel {
 			client.setSoTimeout((int)(timeout*1000));
 			System.out.println(" connect success Socket"+client);
 			System.out.print(" creating streams...");
-//			bos = new BufferedOutputStream(client.getOutputStream(), bufferSize);
-//			oos = new ObjectOutputStream(bos);
-			
-//			bis = new BufferedInputStream(client.getInputStream(), bufferSize);
+
 			in = client.getInputStream();
 			out = client.getOutputStream();
-//			ZipInputStream zis = new ZipInputStream(in);
-			
-//			ois = new ObjectInputStream(in);
-//			ois = new ObjectInputStream(new GZIPInputStream(in));
 			
 			System.out.println("ok");
 		} catch (UnknownHostException e) {
 //			e.printStackTrace();
-			System.err.println(e.getMessage());
+			System.err.println("ERROR in initClient: "+e.getMessage());
 			return false;
 		} catch (ConnectException e) {
-			System.err.println(e.getMessage());
+			System.err.println("ERROR in initClient: "+e.getMessage());
 			JOptionPane.showMessageDialog(null, e.getMessage()+"@"+host+":"+port);
 			return false;
 		} catch (IOException e) {
@@ -257,10 +233,11 @@ public class ComputationClient implements CAComputationKernel {
 				/* read */
 				gridPoints = (GridPoints)ois.readObject();
 				
+				/* -------TODO these code may be useless-------- */
 				System.out.println("Read Object Ok, waiting FIN MSG...");
 				this.sendMessage("GridPointsOK");
 				msg = this.waitMessage();
-				if (msg.equals("SendPointsGridFinished")) {
+				if (msg.equals("SendPointsGridFinished")) { // CHK data fininshed
 
 					this.updateCount = gridPoints.getUpdateCount();
 					System.out.println("* Get gridpoints");
@@ -268,37 +245,35 @@ public class ComputationClient implements CAComputationKernel {
 					System.out.println(" |- GridPoints.pointsNum:  "+gridPoints.pointsNum);
 					System.out.println(" |- GridPoints.update:     "+gridPoints.isUpdated());
 					
-				} else {
-					System.out.println("Expect MSG:SendPointsGridFinished, but receive:"+msg+" Eixt...");
-					this.clearBuf();
-//					System.exit(-1);
-				}
-				
-				/* close */
-//				gzipis.close();
-//				ois.close();
+				} else 
+					throw new UnexpectedMessageException("Expected SendPointsGridFinished but get "+msg);
+				/* --------------------------------------------- */
 				
 				return true;
 				
 			} else if (msg.equals("GridPointsDataNotReady")) {
+				
 				System.out.println("* Remote Data is not ready, wait until ready...");
 				this.sendMessage("WaitUntilGridPointsUpdate");
 				msg = this.waitMessage();
 				if (msg.equals("GridPointsDataReady")) {
 					System.out.println("Data is ready but not read");
-				}
+				} else 
+					throw new UnexpectedMessageException("Expected GridPointsDataReady but get "+msg);
+				
 			} else if (msg.equals("ComputeThreadStoped")) {
+				
 				this.sendMessage("StartComputeThread");
 				System.out.println("start remote compute thread...");
 				msg = this.waitMessage();
 				if (msg.equals("StartComputeThreadOK"))
 					System.out.println("start remote compute thread...ok");
-			} else {
-				System.out.println("Unknown MSG: "+msg);
-//				this.flushSendMessage();
-				this.clearBuf();
-				this.sendMessage("UnknownMSG");
-			}
+				else
+					throw new UnexpectedMessageException("Expected StartComputeThreadOK but get "+msg);
+				
+			} else // unknown msg
+				throw new UnknownMessageException(msg);
+			
 		} catch (ClassNotFoundException e) {
 			System.err.println("ERROR: "+e.getMessage());
 			return false;
@@ -312,12 +287,32 @@ public class ComputationClient implements CAComputationKernel {
 				this.clearBuf();
 			} else if (e.getMessage().equals("Not in GZIP format")) {
 				this.clearBuf();
-			}
-			else {
+			} else {
 				e.printStackTrace();
-				throw e;
+//				throw e;
+				System.exit(-1); // FORCE EXIT
 			}
-//			return false;
+
+		} catch (UnexpectedMessageException e) {
+			
+			System.out.println("[MSG] UnexpectedMessageException:"+e.getMessage());
+			try {
+				this.clearBuf(); // clear buffer
+			} catch (IOException e1) {
+				e1.printStackTrace();
+				System.exit(-1); // FORCE EXIT
+			}
+		} catch (UnknownMessageException e1) {
+			
+			System.out.println("[MSG] UnknownMessageException:"+e1.getMessage());
+			try {
+				this.clearBuf(); // clear buffer
+				this.sendMessage("RequestClearBuffer"); // request server clear buffer
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(-1); // FORCE EXIT
+			}
+			
 		}
 		return false;
 		

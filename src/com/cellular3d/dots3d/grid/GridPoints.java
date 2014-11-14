@@ -2,12 +2,19 @@ package com.cellular3d.dots3d.grid;
 
 import java.io.Serializable;
 
+/**
+ * GridPoints is a Serializable object, including Point4 array and other 
+ * necessary data.
+ * 
+ * @author jyhong (Junyuan Hong/jyhong836@gmail.com) 2014Äê11ÔÂ14ÈÕ
+ *
+ */
 public class GridPoints implements Serializable {
-	
+
 	/**
-	 * 
+	 * generated UID
 	 */
-	private static final long serialVersionUID = 1308053840893751234L;
+	private static final long serialVersionUID = -5187507432229345457L;
 
 	public Point4 [] points = null;
 	

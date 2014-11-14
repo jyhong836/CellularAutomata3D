@@ -367,15 +367,10 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 	private void switchRotateThreadStat() { // start or stop animation
 		stopRotateThread = !stopRotateThread;
 		System.out.println("KEYBOARD: " + ((stopRotateThread)?"stop":"start")+" rotation");
-		if (stopRotateThread)rotateThread.suspend();
-//			try {
-//				rotateThread.wait();
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
+		if (stopRotateThread)
+			rotateThread.suspend();
 		else
 			rotateThread.resume();
-//			notifyAll();
 	}
 	
 	private void switchComputationThreadStat() { // start or stop CA computation

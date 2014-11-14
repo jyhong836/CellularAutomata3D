@@ -43,11 +43,5 @@ public interface CAComputationKernel {
 	public int getZSize();
 	
 	public int getCount();
-	
-//	public void setSocket(String host, int port);
-	
-//	public boolean closeSocket();
-	
-//	public String toString();
 
 }
