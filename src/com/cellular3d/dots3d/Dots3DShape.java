@@ -16,12 +16,12 @@ import javax.vecmath.Color4f;
 import javax.vecmath.Point3f;
 
 import com.cellular3d.CellularAutomata3DApplet;
-import com.cellular3d.dots3d.grid.CAComputationKernel;
-import com.cellular3d.dots3d.grid.CellularAutomataGrid;
-import com.cellular3d.dots3d.grid.ComputationClient;
 import com.cellular3d.dots3d.grid.GridDot;
 import com.cellular3d.dots3d.grid.GridPoints;
 import com.cellular3d.dots3d.grid.Point4;
+import com.cellular3d.dots3d.kernel.CAComputationKernel;
+import com.cellular3d.dots3d.kernel.CellularAutomataGrid;
+import com.cellular3d.dots3d.kernel.ComputationClient;
 import com.sun.j3d.utils.geometry.Box;
 
 /**
@@ -149,7 +149,7 @@ public class Dots3DShape extends BranchGroup {
 	
 	/**
 	 * Use the local computation kernel 
-	 * ({@linkplain com.cellular3d.dots3d.grid.ComputationClient.CellularAutomataGrid CellularAutomataGrid}
+	 * ({@linkplain com.cellular3d.dots3d.kernel.ComputationClient.CellularAutomataGrid CellularAutomataGrid}
 	 * ) as the CAComputationKernel.
 	 */
 	public void setLocalKernel() {

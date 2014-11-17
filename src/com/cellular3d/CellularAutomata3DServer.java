@@ -1,14 +1,15 @@
 package com.cellular3d;
 
 import java.io.IOException;
+import java.net.SocketException;
 
-import com.cellular3d.dots3d.grid.CAComputationKernel;
-import com.cellular3d.dots3d.grid.CellularAutomataGrid;
 import com.cellular3d.dots3d.grid.ComputationServer;
 import com.cellular3d.dots3d.grid.GridDot;
 import com.cellular3d.dots3d.grid.GridPoints;
 import com.cellular3d.dots3d.grid.UnexpectedMessageException;
 import com.cellular3d.dots3d.grid.UnknownMessageException;
+import com.cellular3d.dots3d.kernel.CAComputationKernel;
+import com.cellular3d.dots3d.kernel.CellularAutomataGrid;
 
 public class CellularAutomata3DServer implements Runnable {
 	
@@ -132,7 +133,7 @@ public class CellularAutomata3DServer implements Runnable {
 		cs.waitClient(); // wait client to connect
 		
 		System.out.println("start socket thread");
-		boolean status = false;;
+		boolean status = false;
 		String msg = null;
 		while (runSocketThread) { // socket thread
 			
@@ -140,10 +141,16 @@ public class CellularAutomata3DServer implements Runnable {
 				
 				System.out.println("wait client request...");
 				
-				msg = cs.waitMessage(); // Get Message from client
+				msg = cs.waitMessage(0); // Get Message from client, blocking forever
 				
 				if (msg==null)
 					continue;
+				
+			}catch (SocketException e) {
+
+				System.err.println(e.getMessage());
+				cs.waitClient();
+				continue;
 				
 			} catch (IOException e) { // IOException
 				

@@ -96,6 +96,13 @@ public class ComputationServer {
 		
 	}
 	
+	public String waitMessage(int timeout) throws IOException {
+		accClient.setSoTimeout(timeout*1000);
+		String string = this.waitMessage();
+		accClient.setSoTimeout(timeout*1000);
+		return string;
+	}
+	
 	/**
 	 * This method will block until get the message from client.
 	 * @return the message got from server
