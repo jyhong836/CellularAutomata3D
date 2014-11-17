@@ -311,6 +311,7 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 		} else {
 			try {
 				synchronized (dots3d) {
+					dots3d.notify();
 					dots3d.wait();
 				}
 			} catch (InterruptedException e) {
@@ -426,9 +427,7 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 		System.out.println("Disconnect Remote Kernel");
 		/* stop the computThread firstly */
 		if (!stopComputThread) {
-			stopComputThread = !stopComputThread;
-//			computThread.suspend();
-			this.displayCAStatus(" CA [STOP] COUNT: "+caRunCount);
+			stopComputThreadMethod();
 		}
 		
 		if (dots3d.isRemoteKernel()) {
@@ -438,6 +437,22 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 		return false;
 	}
 	
+	private void stopComputThreadMethod() {
+		stopComputThread = !stopComputThread;
+		synchronized (dots3d) {
+			dots3d.notifyAll();
+			try {
+				dots3d.wait(); // 等待，直到dots3d结束computThread
+			} catch (InterruptedException e) {
+				// TODO 这样的处理太简单，是否需要设一个变量确认已经结束。
+				e.printStackTrace();
+				System.exit(-1);
+			}
+		}
+//		computThread.suspend();
+		this.displayCAStatus(" CA [STOP] COUNT: "+caRunCount);
+	}
+	
 	/**
 	 * Switch computation kernel of Cellular Automata.
 	 * @return true, if switch from local to remote.
@@ -445,9 +460,10 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 	public boolean switchKernel() {
 		/* stop the computThread firstly */
 		if (!stopComputThread) {
-			stopComputThread = !stopComputThread;
-//			computThread.suspend();
-			this.displayCAStatus(" CA [STOP] COUNT: "+caRunCount);
+//			stopComputThread = !stopComputThread;
+////			computThread.suspend();
+//			this.displayCAStatus(" CA [STOP] COUNT: "+caRunCount);
+			stopComputThreadMethod();
 		}
 		synchronized (dots3d) {
 			

@@ -26,6 +26,7 @@ public class CellularAutomata3DServer implements Runnable {
 	int socketSendCount = 0;
 
 	CAComputationKernel caKernel;
+	ComputationServer cs;
 	
 	int   gridsize;
 	float boxscale;
@@ -114,7 +115,7 @@ public class CellularAutomata3DServer implements Runnable {
 				gridPoints.setValue(gridptr, caKernel.getPointsNum(), caKernel.getCount());
 				gridPoints.notifyAll();
 			}
-//			System.out.println("[Computing] pointsNum:"+gridPoints.pointsNum+" Count:"+gridPoints.getUpdateCount());
+			System.out.println("[Computing] pointsNum:"+gridPoints.pointsNum+" Count:"+gridPoints.getUpdateCount());
 		}
 	}
 	
@@ -123,7 +124,7 @@ public class CellularAutomata3DServer implements Runnable {
 	 */
 	private void socketLoop() {
 		
-		ComputationServer cs = new ComputationServer(port);
+		cs = new ComputationServer(port);
 		System.out.println("socket thread: init server socket at port:"+port);
 		if (!cs.initServer()) {
 			System.out.println("exit program");
@@ -149,7 +150,8 @@ public class CellularAutomata3DServer implements Runnable {
 			}catch (SocketException e) {
 
 				System.err.println(e.getMessage());
-				cs.waitClient();
+//				cs.waitClient();
+				this.closeConnect();
 				continue;
 				
 			} catch (IOException e) { // IOException
@@ -157,8 +159,7 @@ public class CellularAutomata3DServer implements Runnable {
 				System.err.println(e.getMessage());
 				if (e.getMessage().equals("Connection reset") || e.getMessage().equals("socket closed")) {
 					
-					computeThread.suspend();
-					cs.waitClient();
+					this.closeConnect();
 					
 				} else if (e.getMessage().equals("Read timed out")) {
 					
@@ -251,9 +252,13 @@ public class CellularAutomata3DServer implements Runnable {
 				} else if (msg.equals("GoodBye")) {
 					
 					// TODO 建立通信机制，这里需要进行信息交流确认连接正常
-					computeThread.suspend();
+					if (!stopComputeThread) {
+						stopComputeThread = !stopComputeThread;
+						computeThread.suspend();
+					}
 					cs.clearBuf();
-					cs.waitClient(); // this method will close socket also.
+//					cs.waitClient(); // this method will close socket also.
+					this.closeConnect();
 					
 				} else if(msg.equals("RequestClearBuffer")) {
 					
@@ -311,8 +316,11 @@ public class CellularAutomata3DServer implements Runnable {
 				System.out.println("check if data is ready...");
 				cout++;
 				updateStat = gridPoints.isUpdated();
+				if (stopComputeThread==true) {
+					System.out.println("ComputeThread has been stopped");
+				}
 			}
-			if (cout>10)
+			if (cout>3)
 			{
 				System.out.println("ERROR: the computation can not be updated, exit...");
 				System.exit(-1);
@@ -320,6 +328,19 @@ public class CellularAutomata3DServer implements Runnable {
 		}
 		System.out.println("data is ready");
 		
+	}
+	
+	private void closeConnect() {
+		if (!stopComputeThread) {
+			stopComputeThread = !stopComputeThread;
+			computeThread.suspend();
+		}
+		for (int i=0;i<3;i++) {
+			if (cs.waitClient()) {
+//				computeThread.resume();
+				break;
+			}
+		}
 	}
 
 	@Override
