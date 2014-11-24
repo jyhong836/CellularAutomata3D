@@ -352,7 +352,7 @@ public class CellularAutomata3DApplet extends Applet implements Runnable, KeyLis
 			System.out.println("KEYBOARD: " + "switch colormod(not available now!)");
 			break;
 		case 'a':
-			switchComputationThreadStat(); // start or stop CA computation
+			switchComputationThreadStat(); // start or stop CA computation FIXME 只能停止刷新本地的显示，不能停止远程的计算，除非断开连接。
 			break;
 		case 'h':
 			System.out.println("Usage:");

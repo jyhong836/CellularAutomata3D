@@ -29,3 +29,5 @@ Feature
 
 Now you can see a cube include many dots.
 
+When you pressed the Key, 'a', you will stop update the 3D model local but not stop the remote thread.
+
